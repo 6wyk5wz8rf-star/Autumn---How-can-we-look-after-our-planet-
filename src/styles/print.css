@@ -1,0 +1,65 @@
+.print-only { display: none; }
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+
+  :root {
+    --paper: white;
+    --paper-light: white;
+    --ink: #000;
+    --ink-soft: #222;
+    --indigo: #000;
+    --line: #aaa;
+    --line-strong: #555;
+    font-size: 10.5pt;
+  }
+
+  body { background: white !important; }
+  body::before,
+  .app-header,
+  .primary-nav,
+  .toast-region,
+  .modal-backdrop,
+  .no-print,
+  .save-bar,
+  .atlas-toolbar { display: none !important; }
+
+  .app-shell,
+  .main-content {
+    width: 100%;
+    max-width: none;
+    min-height: auto;
+    margin: 0;
+    padding: 0;
+  }
+
+  .page { min-height: auto; }
+  .print-only { display: block; }
+  .paper-panel,
+  .shelf-item,
+  .work-preview { box-shadow: none; break-inside: avoid; }
+  .key-guide-page,
+  .key-guide-page > .paper-panel { break-inside: auto; }
+  .key-guide-page { break-after: page; }
+  .key-guide-page:last-child { break-after: auto; }
+  .print-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
+  .display-key-card {
+    display: grid;
+    min-height: 72mm;
+    place-items: center;
+    border: 1.5pt dashed #333;
+    text-align: center;
+    break-inside: avoid;
+  }
+  .display-key-code { font-size: 38pt; font-weight: 800; letter-spacing: 0.12em; }
+  .key-guide-table { width: 100%; border-collapse: collapse; }
+  .key-guide-table thead { display: table-header-group; }
+  .key-guide-table tr { break-inside: avoid; }
+  .key-guide-table th,
+  .key-guide-table td { padding: 3mm; border-bottom: 0.5pt solid #aaa; text-align: left; vertical-align: top; }
+  .key-guide-table th { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.06em; }
+  .key-guide-code { font-size: 17pt; font-weight: 800; letter-spacing: 0.08em; white-space: nowrap; }
+  .atlas-map svg,
+  .saved-map-preview { max-height: 150mm; }
+  .saved-outcome-template { break-inside: avoid; }
+}

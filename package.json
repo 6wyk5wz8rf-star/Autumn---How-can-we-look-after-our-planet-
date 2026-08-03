@@ -1,0 +1,26 @@
+{
+  "name": "how-can-we-look-after-our-planet",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "An open-world Year 4 learning environment. Build 1: Product Foundation and Planet Atlas.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node scripts/inject-sw-assets.mjs",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test tests/*.test.js",
+    "check": "npm run test && npm run build"
+  },
+  "dependencies": {
+    "d3-geo": "3.1.1",
+    "topojson-client": "3.1.0",
+    "world-atlas": "2.0.2"
+  },
+  "devDependencies": {
+    "jsdom": "^29.0.1",
+    "vite": "8.2.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

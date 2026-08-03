@@ -1,0 +1,22 @@
+{
+  "name": "How Can We Look After Our Planet?",
+  "short_name": "Our Planet",
+  "description": "An open-world Year 4 learning environment.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4efe5",
+  "theme_color": "#30485f",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Planet Atlas", "short_name": "Atlas", "url": "./#/atlas" },
+    { "name": "Enter a Key", "short_name": "Key", "url": "./#/key" },
+    { "name": "My Work", "short_name": "Work", "url": "./#/work" }
+  ]
+}
