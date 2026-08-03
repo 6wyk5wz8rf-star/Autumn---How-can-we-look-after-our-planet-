@@ -2,6 +2,14 @@ import { escapeAttr, escapeHTML } from '../utils/dom.js';
 import { formatDate, formatDateTime, humanise, truncate } from '../utils/format.js';
 import { renderKeypad } from '../components/Keypad.js';
 import { profileSymbolIcon } from '../components/ProfileGate.js';
+import {
+  arabicToRoman,
+  createLinkedRepresentations,
+  formatMathsNumber,
+  getRoundingBounds,
+  traceAddition,
+  traceSubtraction,
+} from '../maths/index.js';
 
 const artefactSymbols = {
   'exploration-snapshot': '◎',
@@ -13,7 +21,32 @@ const artefactSymbols = {
   'journey-thread': '⌁',
   'place-portrait': '▱',
   'planet-question-response': '◉',
+  'four-digit-model': '▦',
+  'partition-card': '≡',
+  'comparison-explanation': '↔',
+  'ordered-number-set': '‹',
+  'number-line-estimate': '—',
+  'rounding-explanation': '⌒',
+  'estimate-comparison': '≈',
+  'negative-number-route': '±',
+  'roman-numeral': 'Ⅹ',
+  'addition-model': '+',
+  'subtraction-model': '−',
+  'strategy-comparison': '◇',
+  'inverse-family': '⇄',
+  'problem-model': '?',
+  proof: '∴',
+  counterexample: '≠',
+  'child-created-challenge': '✎',
 };
+
+const NUMBER_ARTEFACT_TYPES = new Set([
+  'four-digit-model', 'partition-card', 'comparison-explanation', 'ordered-number-set',
+  'number-line-estimate', 'rounding-explanation', 'estimate-comparison',
+  'negative-number-route', 'roman-numeral', 'addition-model', 'subtraction-model',
+  'strategy-comparison', 'inverse-family', 'problem-model', 'proof', 'counterexample',
+  'child-created-challenge',
+]);
 
 const outcomeTemplatesWithExplanation = new Set([
   'place-pin',
@@ -34,6 +67,11 @@ function renderSavedPreview(artifact, type) {
   const source = safeSvgDataUrl(artifact.preview?.markup);
   if (source) {
     return `<img class="saved-map-preview" src="${escapeAttr(source)}" alt="Saved ${escapeAttr(artifact.preview?.label || 'map')} view" />`;
+  }
+  if (NUMBER_ARTEFACT_TYPES.has(type)) {
+    const state = artifact.content?.modelState || artifact.structuredContent?.modelState || {};
+    const values = [state.value, state.left, state.right, state.target].filter((value) => Number.isFinite(Number(value))).slice(0, 3);
+    return `<span class="work-preview-symbol maths-symbol" aria-hidden="true">${artefactSymbols[type] || '◇'}</span>${values.length ? `<strong class="maths-preview-values">${values.map((value) => Number(value).toLocaleString('en-GB')).join(' · ')}</strong>` : `<strong>${escapeHTML(artifact.preview?.label || humanise(type))}</strong>`}`;
   }
   return `<span class="work-preview-symbol" aria-hidden="true">${artefactSymbols[type] || '▱'}</span>${artifact.preview?.label ? `<strong>${escapeHTML(artifact.preview.label)}</strong>` : ''}`;
 }
@@ -60,7 +98,69 @@ function outcomeField(label, value) {
   return `<div><dt class="eyebrow">${escapeHTML(label)}</dt><dd>${escapeHTML(text)}</dd></div>`;
 }
 
+function savedColumnDigits(value) {
+  return [...String(value).padStart(5, ' ')].map((digit) => `<span>${digit === ' ' ? '' : digit}</span>`).join('');
+}
+
+function savedNumberLine(lower, upper, value, label = '') {
+  const start = Number(lower);
+  const end = Math.max(start + 1, Number(upper));
+  const point = Math.min(end, Math.max(start, Number(value)));
+  const x = 70 + ((point - start) / (end - start)) * 860;
+  return `<svg class="scaled-number-line" viewBox="0 0 1000 180" role="img" aria-label="Saved number line from ${start} to ${end}; marker at ${point}"><line x1="70" y1="92" x2="930" y2="92"/>${Array.from({ length: 11 }, (_, index) => { const tickX = 70 + index * 86; const tickValue = start + ((end - start) * index / 10); return `<line x1="${tickX}" y1="${index % 5 === 0 ? 72 : 80}" x2="${tickX}" y2="108"/>${[0, 5, 10].includes(index) ? `<text x="${tickX}" y="142">${formatMathsNumber(Math.round(tickValue))}</text>` : ''}`; }).join('')}<path class="line-marker" d="M${x} 28l-13 26h26z"/><line class="line-marker" x1="${x}" y1="52" x2="${x}" y2="92"/><text class="marker-label" x="${x}" y="20">${escapeHTML(label || formatMathsNumber(point))}</text></svg>`;
+}
+
+function savedFormalCalculation(leftValue, rightValue, subtraction, reveal = true) {
+  let left = Math.min(9999, Math.max(0, Number(leftValue) || 0));
+  let right = Math.min(9999, Math.max(0, Number(rightValue) || 0));
+  if (subtraction && right > left) [left, right] = [right, left];
+  const trace = subtraction ? traceSubtraction(left, right) : traceAddition(left, right);
+  const result = subtraction ? trace.difference : trace.total;
+  const steps = subtraction ? trace.exchangeEvents : trace.steps.filter((step) => step.outgoingExchange);
+  return `<div class="column-calculation" role="table" aria-label="${escapeAttr(trace.formatted)}"><div class="place-headings"><span>10,000s</span><span>1,000s</span><span>100s</span><span>10s</span><span>1s</span></div><div class="column-row">${savedColumnDigits(left)}</div><div class="column-row operator"><b>${subtraction ? '−' : '+'}</b>${savedColumnDigits(right)}</div><div class="column-rule"></div><div class="column-row result">${reveal ? savedColumnDigits(result) : '<span></span><span></span><span>?</span><span>?</span><span>?</span>'}</div></div>${steps.length ? `<div class="exchange-trace">${steps.map((step, index) => `<p><b>${index + 1}</b>${escapeHTML(step.message || `Exchange from ${step.place} to ${step.exchangesTo}.`)}</p>`).join('')}</div>` : '<p>No exchange was needed.</p>'}`;
+}
+
+function renderMathsOutcome(type, content) {
+  const state = content.modelState || {};
+  const explanation = outcomeField('My explanation', content.explanation || state.explanation);
+  let model = '';
+  if (['four-digit-model', 'partition-card'].includes(type)) {
+    let linked;
+    try { linked = createLinkedRepresentations(state.sourceCounts || Math.min(9999, Math.max(0, Number(state.value) || 0))); } catch { linked = createLinkedRepresentations(0); }
+    model = `<div class="number-hero"><strong>${linked.numeral}</strong><span>${escapeHTML(linked.numberName)}</span></div><div class="place-grid">${linked.placeValueChart.map((column) => `<div class="place-column"><span>${column.label}</span><strong>${column.digit}</strong><small>${formatMathsNumber(column.representedValue)}</small></div>`).join('')}</div><p class="representation-strip">${escapeHTML(linked.expandedForm)}</p>${type === 'partition-card' ? `<p class="model-equation">${(state.partitionTerms || linked.allPlaceTerms).map((term) => formatMathsNumber(Number(term) || 0)).join(' + ')} = ${linked.numeral}</p>` : ''}`;
+  } else if (type === 'number-line-estimate') {
+    model = savedNumberLine(state.lower, state.upper, state.position ?? state.target, state.answerRevealed ? formatMathsNumber(Number(state.target)) : 'estimated position');
+  } else if (type === 'rounding-explanation') {
+    const value = Math.min(9999, Math.max(0, Number(state.value) || 0));
+    const unit = [10, 100, 1000].includes(Number(state.roundingUnit)) ? Number(state.roundingUnit) : 10;
+    const bounds = getRoundingBounds(value, unit);
+    model = `${savedNumberLine(bounds.lower, bounds.upper, value)}<p class="model-equation">${formatMathsNumber(value)} → ${formatMathsNumber(bounds.rounded)} to the nearest ${formatMathsNumber(unit)}</p>`;
+  } else if (['addition-model', 'subtraction-model'].includes(type)) {
+    model = savedFormalCalculation(state.left, state.right, type === 'subtraction-model', true);
+  } else if (type === 'negative-number-route') {
+    const lower = Math.min(-10, Number(state.start) || 0, Number(state.end) || 0) - 2;
+    const upper = Math.max(10, Number(state.start) || 0, Number(state.end) || 0) + 2;
+    model = `${savedNumberLine(lower, upper, state.start, `start ${state.start}`)}${savedNumberLine(lower, upper, state.end, `end ${state.end}`)}<p class="model-equation">Difference: ${Math.abs((Number(state.end) || 0) - (Number(state.start) || 0))}</p>`;
+  } else if (type === 'roman-numeral') {
+    const value = Math.min(100, Math.max(1, Number(state.romanValue) || 1));
+    model = `<p class="roman-answer">${formatMathsNumber(value)} = <strong>${escapeHTML(state.romanInput || arabicToRoman(value))}</strong></p>`;
+  } else if (type === 'ordered-number-set') {
+    model = `<p class="ordered-result">${[...(state.orderValues || [])].sort((a, b) => a - b).map((value) => `<strong>${formatMathsNumber(Number(value) || 0)}</strong>`).join('<b>‹</b>')}</p>`;
+  } else if (type === 'comparison-explanation') {
+    model = `<p class="model-equation">${formatMathsNumber(Number(state.left ?? state.value) || 0)} ${state.mode === 'stepper' ? '→' : Number(state.left) === Number(state.right) ? '=' : Number(state.left) > Number(state.right) ? '>' : '<'} ${formatMathsNumber(Number(state.right ?? state.value) || 0)}</p>`;
+  } else if (type === 'estimate-comparison') {
+    const left = Number(state.left) || 0; const right = Number(state.right) || 0; const subtraction = state.operation === 'subtraction';
+    model = `<p class="model-equation">${formatMathsNumber(left)} ${subtraction ? '−' : '+'} ${formatMathsNumber(right)} = ${formatMathsNumber(subtraction ? Math.abs(left - right) : left + right)}</p>`;
+  } else {
+    model = `<dl>${outcomeField('Values', [state.left, state.right, state.third].filter((value) => Number.isFinite(Number(value))).map((value) => formatMathsNumber(Number(value))))}${outcomeField('Strategy', state.strategyChoice || content.strategy)}${outcomeField('Unit', state.problemUnit)}${outcomeField('Unknown', state.problemUnknown)}${outcomeField('Classification', state.selectedClassification || state.challengeClassification)}${outcomeField('Example', state.exampleEvidence)}${outcomeField('Counterexample', state.counterexampleEvidence)}${outcomeField('Amended statement', state.amendedStatement || state.challengeStatement)}</dl>`;
+  }
+  return `<section class="saved-outcome-template maths-outcome" data-maths-print><div class="maths-outcome-mark" aria-hidden="true">${artefactSymbols[type] || '◇'}</div><div><h2>${escapeHTML(humanise(type))}</h2>${model}<dl>${explanation}</dl></div></section>`;
+}
+
 function renderOutcomeTemplate(type, content) {
+  if (NUMBER_ARTEFACT_TYPES.has(type)) {
+    return renderMathsOutcome(type, content);
+  }
   if (type === 'three-view-comparison') {
     const representations = [
       ['Globe', content.globeView],
@@ -116,18 +216,13 @@ export function renderHomeView({ profile, recentActivity, workCount = 0 }) {
         <p class="eyebrow">${greeting}</p>
         <h1 id="home-title">How can we look after our planet?</h1>
         <p class="lede">Begin with a place. Look closely. Follow what you notice.</p>
-        <div class="cluster no-print">
-          <button class="button secondary" type="button" data-route="key">Enter today’s key</button>
-        </div>
       </div>
+      <aside class="home-key-station no-print" aria-labelledby="home-key-title"><p class="eyebrow">One direct path</p><h2 id="home-key-title">Today’s Key</h2>${renderKeypad()}</aside>
       <button class="atlas-landmark" type="button" data-route="atlas" aria-label="Open Planet Atlas">
         <span class="atlas-orb" aria-hidden="true"></span>
         <span class="atlas-label"><strong>Planet Atlas</strong><span>Globe · map · places · journeys</span></span>
       </button>
-      <div class="world-question optional-detail">
-        <p>“Looking after a place begins with understanding it.”</p>
-        ${workCount ? `<span class="small muted">Your workspace holds ${workCount} ${workCount === 1 ? 'idea' : 'ideas'}.</span>` : '<span class="small muted">Your ideas will gather in My Work.</span>'}
-      </div>
+      <button class="number-landmark" type="button" data-route="numbers" aria-label="Open Number Expedition"><span class="number-cairn" aria-hidden="true"><i>1</i><i>10</i><i>100</i><i>1,000</i></span><span class="atlas-label"><strong>Number Expedition</strong><span>Build · move · compare · prove</span></span></button>
     </div>
     ${recentActivity ? `<aside class="paper-panel panel-pad" style="margin-top:1rem" aria-label="Continue a recent pathway">
       <div class="spread">
@@ -168,33 +263,42 @@ export function renderKeysView({ activities = [], access = [], artifacts = [] })
       </div>
       <button class="button" type="button" data-route="key">Enter a Key</button>
     </div>
-    ${opened.length ? `<div class="key-shelf">
-      ${opened.map((activity) => {
+    ${opened.length ? `<div class="key-environments">
+      ${[['planet-atlas', 'Planet Atlas'], ['number-expedition', 'Number Expedition']].map(([destinationId, destinationTitle]) => {
+        const destinationActivities = opened.filter((activity) => activity.destinationId === destinationId);
+        if (!destinationActivities.length) return '';
+        return `<section class="key-environment"><div class="spread"><div><p class="eyebrow">Open pathways</p><h2>${destinationTitle}</h2></div><span class="small muted">${destinationActivities.length} ${destinationActivities.length === 1 ? 'pathway' : 'pathways'}</span></div><div class="key-path-list">${destinationActivities.map((activity) => {
         const record = accessById.get(activity.id) || {};
         const saved = artifacts.find((artifact) => artifact.activityId === activity.id || artifact.activity === activity.id);
-        return `<article class="shelf-item">
-          <div>
-            <p class="eyebrow">Planet Atlas · ${escapeHTML(activity.rhythm?.[0] || 'Notice')}</p>
-            <h3>${escapeHTML(activity.title)}</h3>
-            <p class="muted">${escapeHTML(activity.shortInvitation || activity.invitation || activity.description || '')}</p>
-          </div>
-          <div class="work-meta">
-            <span>First opened ${formatDate(record.firstOpenedAt || record.firstOpened || record.createdAt)}</span>
-            ${saved ? '<span><span class="status-dot"></span>Saved work</span>' : ''}
-          </div>
-          <div class="cluster item-actions">
-            <button class="button" type="button" data-route="activity" data-route-value="${escapeAttr(activity.id)}">${saved ? 'Revisit' : 'Open pathway'}</button>
-          </div>
-        </article>`;
+        return `<article class="key-path-row"><div><p class="eyebrow">${escapeHTML(activity.regionId ? humanise(activity.regionId) : activity.rhythm?.[0] || 'Notice')}</p><h3>${escapeHTML(activity.title)}</h3><p>${escapeHTML(activity.shortInvitation || activity.invitation || '')}</p></div><div class="key-row-meta"><span>${saved ? 'Saved work' : `Opened ${formatDate(record.firstOpenedAt || record.createdAt)}`}</span><button class="button" type="button" data-route="activity" data-route-value="${escapeAttr(activity.id)}">${saved ? 'Revisit' : 'Open'}</button></div></article>`;
+      }).join('')}</div></section>`;
       }).join('')}
     </div>` : `<div class="empty-state">
       <div>
         <div class="display-type" style="font-size:3rem;color:var(--mineral)" aria-hidden="true">⌘</div>
         <h2>Your key shelf is ready</h2>
-        <p class="muted">Enter a four-digit key, or explore Planet Atlas freely.</p>
-        <div class="cluster" style="justify-content:center"><button class="button" type="button" data-route="key">Enter a Key</button><button class="button secondary" type="button" data-route="atlas">Explore the atlas</button></div>
+        <p class="muted">Enter a four-digit key, or explore either open environment.</p>
+        <div class="cluster" style="justify-content:center"><button class="button" type="button" data-route="key">Enter a Key</button><button class="button secondary" type="button" data-route="numbers">Explore numbers</button></div>
       </div>
     </div>`}
+  </section>`;
+}
+
+export function renderCollectionView({ key, activities = [], artifacts = [] }) {
+  if (!key || key.type !== 'collection') {
+    return `<section class="page"><div class="empty-state"><div><h1>That collection was not found</h1><button class="button" type="button" data-route="keys">Return to My Keys</button></div></div></section>`;
+  }
+  const activityIds = new Set(key.activityIds || []);
+  const included = activities.filter((activity) => activityIds.has(activity.id));
+  return `<section class="page" aria-labelledby="collection-title">
+    <div class="page-head">
+      <div><p class="eyebrow">Key Collection · ${escapeHTML(key.destinationTitle || humanise(key.destinationId || 'pathways'))}</p><h1 id="collection-title">${escapeHTML(key.childFacingTitle || key.title)}</h1><p class="lede">${escapeHTML(key.description || 'Explore these connected pathways in any order.')}</p></div>
+      <button class="button secondary" type="button" data-route="keys">All My Keys</button>
+    </div>
+    <div class="key-path-list">${included.map((activity) => {
+      const saved = artifacts.some((artifact) => artifact.activityId === activity.id || artifact.activity === activity.id);
+      return `<article class="key-path-row"><div><p class="eyebrow">${escapeHTML(activity.regionId ? humanise(activity.regionId) : 'Connected pathway')}</p><h2>${escapeHTML(activity.title)}</h2><p>${escapeHTML(activity.shortInvitation || activity.invitation || '')}</p></div><div class="key-row-meta"><span>${saved ? 'Saved work' : 'Ready to explore'}</span><button class="button" type="button" data-route="activity" data-route-value="${escapeAttr(activity.id)}">${saved ? 'Revisit' : 'Open'}</button></div></article>`;
+    }).join('')}</div>
   </section>`;
 }
 
@@ -216,14 +320,14 @@ export function renderKeyEntryView() {
 export function renderWorkView({ artifacts = [], responses = [], activeFilter = 'all' }) {
   const filters = [
     ['all', 'All work'],
-    ['map', 'Maps & places'],
-    ['journey', 'Journeys'],
+    ['planet-atlas', 'Atlas'],
+    ['number-expedition', 'Numbers'],
     ['explanation', 'Explanations'],
   ];
   const showFilters = artifacts.length >= 6;
   const effectiveFilter = showFilters ? activeFilter : 'all';
   const visible = effectiveFilter === 'all' ? artifacts : artifacts.filter((artifact) => {
-    const haystack = [artifact.type, artifact.artefactType, ...(artifact.tags || []), ...(artifact.curriculumTags || [])].join(' ').toLowerCase();
+    const haystack = [artifact.destinationId, artifact.destination, artifact.type, artifact.artefactType, ...(artifact.tags || []), ...(artifact.curriculumTags || [])].join(' ').toLowerCase();
     return haystack.includes(effectiveFilter);
   });
   const artifactById = new Map(artifacts.map((artifact) => [artifact.id, artifact]));
@@ -262,7 +366,7 @@ export function renderWorkView({ artifacts = [], responses = [], activeFilter = 
     </div>
     ${visible.length ? `<div class="work-shelf">
       ${visible.map(renderArtifactCard).join('')}
-    </div>` : `<div class="empty-state"><div><div class="display-type" style="font-size:3rem;color:var(--moss)" aria-hidden="true">▱</div><h2>${artifacts.length ? 'No work in this view yet' : 'Your work will gather here'}</h2><p class="muted">Save a map view, make a Journey Thread or follow a Key Activity. You can always return to the original.</p><button class="button" type="button" data-route="atlas">Explore Planet Atlas</button></div></div>`}
+    </div>` : `<div class="empty-state"><div><div class="display-type" style="font-size:3rem;color:var(--moss)" aria-hidden="true">▱</div><h2>${artifacts.length ? 'No work in this view yet' : 'Your work will gather here'}</h2><p class="muted">Save a map view, mathematical model or guided pathway. You can always return to the original.</p><div class="cluster" style="justify-content:center"><button class="button" type="button" data-route="atlas">Explore the atlas</button><button class="button secondary" type="button" data-route="numbers">Explore numbers</button></div></div></div>`}
   </section>`;
 }
 
@@ -313,7 +417,7 @@ export function renderWorkDetailView(artifact) {
           ${renderSavedPreview(artifact, type)}
         </div>
         ${outcomeTemplate}
-        ${entries.length ? `<dl class="stack">${entries.map(([key, value]) => `<div><dt class="eyebrow">${escapeHTML(humanise(key))}</dt><dd style="margin:0">${escapeHTML(value)}</dd></div>`).join('')}</dl>` : '<p class="muted">This piece stores a visual map state. Reopen the activity to explore it again.</p>'}
+        ${entries.length ? `<dl class="stack">${entries.map(([key, value]) => `<div><dt class="eyebrow">${escapeHTML(humanise(key))}</dt><dd style="margin:0">${escapeHTML(value)}</dd></div>`).join('')}</dl>` : outcomeTemplate ? '' : '<p class="muted">This piece stores a visual map state. Reopen the activity to explore it again.</p>'}
         ${artifact.explanation && !outcomeTemplatesWithExplanation.has(type) ? `<div><p class="eyebrow">My explanation</p><p>${escapeHTML(artifact.explanation)}</p></div>` : ''}
         ${artifact.voicePlaybackUrl ? `<div class="voice-playback"><p class="eyebrow">My voice explanation</p><audio controls preload="metadata" src="${escapeAttr(artifact.voicePlaybackUrl)}" aria-label="Play my saved voice explanation"></audio><p class="small muted">Use the controls to replay or change the volume. The written explanation remains visible when one was added.</p></div>` : ''}
         ${artifact.reflection ? `<div class="feedback-note"><strong>Reflection</strong><p>${escapeHTML(artifact.reflection)}</p></div>` : ''}

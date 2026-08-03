@@ -78,6 +78,42 @@ const artType = (record) => ({
   ...record,
 });
 
+const numberType = (record) => ({
+  destinationIds: ['number-expedition'],
+  active: true,
+  activationBuild: 2,
+  versioned: true,
+  printable: true,
+  supportedExplanationModes: ['voice', 'short-text', 'mathematical-model'],
+  requiredContent: ['modelState'],
+  optionalContent: [
+    'values', 'representations', 'answer', 'estimate', 'explanation', 'strategy',
+    'originalValues', 'childActions', 'generatorSeed', 'scaffold', 'activityId',
+    'steps', 'counterexample', 'units',
+  ],
+  ...record,
+});
+
+const NUMBER_ARTEFACT_TYPES = [
+  ['four-digit-model', 'Four-digit Model', 'place-value'],
+  ['partition-card', 'Partition Card', 'place-value'],
+  ['comparison-explanation', 'Comparison Explanation', 'comparison'],
+  ['ordered-number-set', 'Ordered-number Set', 'comparison'],
+  ['number-line-estimate', 'Number-line Estimate', 'number-line'],
+  ['rounding-explanation', 'Rounding Explanation', 'rounding'],
+  ['estimate-comparison', 'Estimate Comparison', 'estimation'],
+  ['negative-number-route', 'Negative-number Route', 'number-line'],
+  ['roman-numeral', 'Roman Numeral Marker', 'number-system'],
+  ['addition-model', 'Addition Model', 'calculation'],
+  ['subtraction-model', 'Subtraction Model', 'calculation'],
+  ['strategy-comparison', 'Strategy Comparison', 'strategy'],
+  ['inverse-family', 'Inverse Family', 'reasoning'],
+  ['problem-model', 'Problem Model', 'problem-solving'],
+  ['proof', 'Reasoning Proof', 'proof'],
+  ['counterexample', 'Counterexample', 'proof'],
+  ['child-created-challenge', 'Child-created Challenge', 'challenge'],
+].map(([id, label, category]) => numberType({ id, label, category }));
+
 export const ARTEFACT_TYPES = Object.freeze([
   atlasType({
     id: 'exploration-snapshot',
@@ -156,6 +192,8 @@ export const ARTEFACT_TYPES = Object.freeze([
     requiredContent: ['responseDate'],
     optionalContent: ['voiceResponseRef', 'shortSentence', 'visualIdeaIds', 'linkedArtefactIds', 'whatChanged', 'evidenceUsed', 'stillWondering'],
   },
+
+  ...NUMBER_ARTEFACT_TYPES,
 
   // Build 10 contracts: registered now so photographs and physical work survive
   // the same My Work lifecycle, but deliberately not exposed in Build 1.

@@ -1,0 +1,286 @@
+.teacher-key-room {
+  display: grid;
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+}
+
+.teacher-key-room__header,
+.teacher-key-group__heading,
+.teacher-key-card__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.teacher-key-room__header-actions,
+.teacher-key-card__actions,
+.teacher-key-utility-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.teacher-key-tools {
+  display: grid;
+  grid-template-columns: minmax(16rem, 2fr) repeat(3, minmax(10rem, 1fr));
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 1px solid var(--line, #c8c1b5);
+  border-radius: var(--radius, 16px);
+  background: var(--paper-light, #fbf8f1);
+}
+
+.teacher-key-tools label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.teacher-key-tools select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--line-strong, #7c7c7c);
+  border-radius: var(--radius-sm, 10px);
+  background: white;
+}
+
+.teacher-key-board-choice {
+  grid-column: 1 / -1;
+  display: flex !important;
+  align-items: center;
+  min-height: 44px;
+}
+
+.teacher-key-board-choice input {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.teacher-quick-keys,
+.teacher-key-utilities {
+  padding: clamp(1rem, 2vw, 1.5rem);
+  border: 1px solid var(--line, #c8c1b5);
+  border-radius: var(--radius, 16px);
+  background: var(--paper-light, #fbf8f1);
+  background: color-mix(in srgb, var(--mineral, #82a2ae) 10%, var(--paper-light, #fbf8f1));
+}
+
+.teacher-quick-key-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.7rem;
+}
+
+.teacher-quick-key {
+  display: grid;
+  gap: 0.25rem;
+  min-height: 84px;
+  padding: 0.85rem;
+  border: 1px solid var(--line-strong, #7c7c7c);
+  border-radius: var(--radius-sm, 10px);
+  background: var(--paper-light, white);
+  text-align: left;
+}
+
+.teacher-quick-key span,
+.teacher-key-card__code {
+  color: var(--indigo, #30485f);
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  line-height: 1;
+}
+
+.teacher-key-results,
+.teacher-key-group,
+.teacher-key-strand {
+  display: grid;
+  gap: 1rem;
+}
+
+.teacher-key-group + .teacher-key-group {
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line, #c8c1b5);
+}
+
+.teacher-key-group__heading h2,
+.teacher-key-strand h3,
+.teacher-key-card h4 {
+  margin: 0;
+}
+
+.teacher-key-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: 0.85rem;
+}
+
+.teacher-key-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--line, #c8c1b5);
+  border-radius: var(--radius, 16px);
+  background: var(--paper-light, #fbf8f1);
+}
+
+.teacher-key-card__meta {
+  margin: 0.35rem 0 0;
+  color: var(--ink-soft, #5b6466);
+  font-size: 0.82rem;
+}
+
+.teacher-key-card__favourite {
+  min-width: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--indigo, #30485f);
+  font-size: 1.7rem;
+}
+
+.teacher-key-card__actions {
+  align-items: center;
+  margin-top: auto;
+}
+
+.teacher-key-card__actions .text-button {
+  min-height: 44px;
+}
+
+.teacher-key-empty {
+  padding: 2rem;
+  border: 1px dashed var(--line-strong, #7c7c7c);
+  border-radius: var(--radius, 16px);
+  text-align: center;
+}
+
+.teacher-key-utilities {
+  display: grid;
+  gap: 1rem;
+}
+
+.teacher-key-display {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  min-width: 320px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  place-items: center;
+  overflow: auto;
+  padding: max(1.25rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+  background: #fbf8f1;
+  color: #172129;
+  text-align: center;
+}
+
+.teacher-key-display__exit {
+  position: fixed;
+  top: max(1rem, env(safe-area-inset-top));
+  right: max(1rem, env(safe-area-inset-right));
+  z-index: 1;
+  min-width: 6.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid currentcolor;
+  border-radius: 0.6rem;
+  background: #fbf8f1;
+  color: #172129;
+  font-weight: 800;
+}
+
+.teacher-key-display__content {
+  display: grid;
+  gap: clamp(0.8rem, 2vh, 1.5rem);
+  max-width: 92vw;
+  place-items: center;
+}
+
+.teacher-key-display__eyebrow {
+  margin: 0;
+  font-size: clamp(1.4rem, 3vw, 3rem);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.teacher-key-display__code {
+  font-size: clamp(7rem, 28vw, 23rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 0.85;
+}
+
+.teacher-key-display__title {
+  max-width: 24ch;
+  margin: 0;
+  font-family: "Iowan Old Style", Georgia, serif;
+  font-size: clamp(2rem, 6vw, 5rem);
+  line-height: 1.05;
+}
+
+.teacher-print-surface {
+  display: none;
+}
+
+@media (max-width: 980px) {
+  .teacher-key-tools { grid-template-columns: 1fr 1fr; }
+  .teacher-key-search { grid-column: 1 / -1; }
+}
+
+@media (max-width: 650px) {
+  .teacher-key-room__header,
+  .teacher-key-group__heading { flex-direction: column; }
+  .teacher-key-tools { grid-template-columns: 1fr; }
+  .teacher-key-search,
+  .teacher-key-board-choice { grid-column: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .teacher-key-display { scroll-behavior: auto; }
+}
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+
+  body.teacher-printing > *:not(.teacher-print-surface) { display: none !important; }
+  body.teacher-printing .teacher-print-surface {
+    display: block !important;
+    color: #000;
+    background: #fff;
+    font: 10pt/1.35 Arial, sans-serif;
+  }
+
+  .teacher-print-key-card {
+    display: grid;
+    min-height: 112mm;
+    padding: 12mm;
+    border: 1.5pt solid #000;
+    place-items: center;
+    text-align: center;
+    break-inside: avoid;
+  }
+
+  .teacher-print-key-card--cut-out { border-style: dashed; }
+  .teacher-print-key-card p { margin: 0; font-size: 14pt; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .teacher-print-key-card__code { font-size: 58pt; font-weight: 900; letter-spacing: 0.12em; }
+  .teacher-print-key-card h2 { margin: 0; font-size: 23pt; }
+  .teacher-print-card-sheet { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
+
+  .teacher-print-guide__environment { break-after: page; }
+  .teacher-print-guide__environment:last-child { break-after: auto; }
+  .teacher-print-guide__strand { break-inside: auto; }
+  .teacher-print-guide table { width: 100%; border-collapse: collapse; }
+  .teacher-print-guide thead { display: table-header-group; }
+  .teacher-print-guide tr { break-inside: avoid; }
+  .teacher-print-guide th,
+  .teacher-print-guide td { padding: 2.5mm; border-bottom: 0.5pt solid #888; text-align: left; vertical-align: top; }
+  .teacher-print-guide th { font-size: 8pt; letter-spacing: 0.05em; text-transform: uppercase; }
+  .teacher-print-guide__code { white-space: nowrap; font-size: 15pt; font-weight: 900; letter-spacing: 0.08em; }
+  .teacher-print-guide td span { color: #333; font-size: 8pt; }
+}

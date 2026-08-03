@@ -5,12 +5,12 @@ import { renderConfirmModal } from '../components/Modal.js';
 import { renderKeyGuide } from '../components/KeyGuide.js';
 import {
   renderAtlasView,
+  renderCollectionView,
   renderEditArtifactModal,
   renderGlossary,
   renderHomeView,
   renderKeyEntryView,
   renderKeysView,
-  renderMaintenanceView,
   renderPlanetQuestionModal,
   renderSettingsView,
   renderVersionCompareModal,
@@ -26,8 +26,10 @@ import {
   normaliseActivityState,
   titleForOutcome,
 } from '../destinations/planet-atlas/activityExperience.js';
-import { PLANET_ATLAS_ACTIVITIES, getActivityById } from '../data/activities.js';
+import { ACTIVITIES, getActivityById } from '../data/activities.js';
+import { getNumberTool } from '../data/numberExpedition.js';
 import { KEY_MANIFEST, getKeyByCode } from '../data/keys.js';
+import { DESTINATIONS } from '../data/destinations.js';
 import { GLOSSARY } from '../data/glossary.js';
 import { parseRoute, navigate, routeLabel } from '../utils/router.js';
 import { escapeAttr, escapeHTML, qsa, setDocumentTitle } from '../utils/dom.js';
@@ -68,9 +70,16 @@ import { getSettings, updateSettings } from '../services/settings.js';
 import { speak } from '../services/speech.js';
 import { createAudioObjectUrl, revokeAudioObjectUrl, startAudioRecording } from '../services/audio.js';
 import { registerServiceWorker, subscribeToNetworkStatus } from '../services/serviceWorker.js';
+import {
+  TeacherKeyRoomController,
+  teacherKeySession,
+} from '../teacher/index.js';
 
-const APP_VERSION = 'build-1.1.0';
-const MAINTENANCE_SESSION_KEY = 'our-planet:maintenance-session';
+const APP_VERSION = 'build-2.0.0';
+
+function renderNumberExpeditionHost({ toolId = null, activityId = null } = {}) {
+  return `<div id="number-expedition" data-number-tool-id="${escapeAttr(toolId || '')}" data-number-activity-id="${escapeAttr(activityId || '')}"></div>`;
+}
 
 function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -232,7 +241,14 @@ export class App {
     this.glossaryOpen = false;
     this.glossaryReturnFocus = null;
     this.map = null;
+    this.numberExpedition = null;
+    this.numberOpenStates = new Map();
+    this.numberVoiceExplanation = null;
+    this.teacherRoom = null;
+    this.teacherPreviewActivityId = null;
+    this.keyEntryOrigin = null;
     this.AtlasMapClass = null;
+    this.NumberExpeditionClass = null;
     this.keypad = null;
     this.recording = null;
     this.planetQuestionVoice = null;
@@ -248,7 +264,7 @@ export class App {
     this.pendingToast = '';
     this.pendingDeleteArtifactId = null;
     this.pendingProfileAction = null;
-    this.maintenanceUnlocked = sessionStorage.getItem(MAINTENANCE_SESSION_KEY) === 'true';
+    this.maintenanceUnlocked = false;
     this.onClick = this.onClick.bind(this);
     this.onInput = this.onInput.bind(this);
     this.onChange = this.onChange.bind(this);
@@ -303,6 +319,16 @@ export class App {
     await this.flushActivityStateSave();
     await this.cancelActiveRecording({ clearPlanetVoice: true });
     const nextRoute = parseRoute();
+    const continuingNumberVoice = (nextRoute.name === 'number-tool' && this.route.name === 'number-tool' && nextRoute.params?.toolId === this.route.params?.toolId)
+      || (nextRoute.name === 'activity' && this.route.name === 'activity' && nextRoute.params?.activityId === this.route.params?.activityId);
+    if (!continuingNumberVoice) this.numberVoiceExplanation = null;
+    if (nextRoute.name !== 'activity' || nextRoute.params?.activityId !== this.teacherPreviewActivityId) {
+      this.teacherPreviewActivityId = null;
+    }
+    if (this.route.name === 'maintenance' && nextRoute.name !== 'maintenance') {
+      if (teacherKeySession.getState().active) teacherKeySession.close();
+      this.maintenanceUnlocked = false;
+    }
     const revision = this.revisingArtifactId
       ? this.artifacts.find((item) => item.id === this.revisingArtifactId)
       : null;
@@ -338,15 +364,18 @@ export class App {
         this.route = { name: 'keys', params: {} };
         return;
       }
-      const allowed = this.access.some((item) => item.activityId === activity.id);
+      const teacherPreview = this.teacherPreviewActivityId === activity.id;
+      const allowed = teacherPreview || this.access.some((item) => item.activityId === activity.id);
       if (!allowed) {
         this.pendingToast = 'Enter the four-digit key to remember and open that guided pathway.';
         this.route = { name: 'key', params: {} };
         return;
       }
-      const savedDraft = await getActivityState(this.profile.id, activity.id);
-      this.activityState = normaliseActivityState(activity, savedDraft?.state);
-      if (this.lastRouteSignature !== `activity:${activity.id}`) {
+      const savedDraft = teacherPreview ? null : await getActivityState(this.profile.id, activity.id);
+      this.activityState = activity.destinationId === 'number-expedition'
+        ? (savedDraft?.state || null)
+        : normaliseActivityState(activity, savedDraft?.state);
+      if (!teacherPreview && this.lastRouteSignature !== `activity:${activity.id}`) {
         await recordActivityVisit(this.profile.id, activity).catch(() => {});
       }
     }
@@ -369,9 +398,9 @@ export class App {
     if (!this.profile) return;
     this.settings = await getSettings(this.profile.id);
     this.applySettings();
-    await syncGrantedActivities(this.profile.id, PLANET_ATLAS_ACTIVITIES);
+    await syncGrantedActivities(this.profile.id, ACTIVITIES);
     const [access, artefacts, responses] = await Promise.all([
-      listActivityAccess(this.profile.id, { activityRegistry: PLANET_ATLAS_ACTIVITIES }),
+      listActivityAccess(this.profile.id, { activityRegistry: ACTIVITIES }),
       listArtefacts(this.profile.id),
       listPlanetQuestionResponses(this.profile.id),
     ]);
@@ -401,7 +430,7 @@ export class App {
     if (this.recording) await this.cancelActiveRecording();
     this.destroyMountedView();
     const route = this.guardedRoute();
-    const signature = `${route.name}:${route.params?.activityId || route.params?.artifactId || ''}`;
+    const signature = `${route.name}:${route.params?.activityId || route.params?.artifactId || route.params?.toolId || route.params?.keyId || ''}`;
     const content = this.renderRoute(route);
     let modal = this.modalHTML;
     if (!this.profile || this.profileModalOpen) {
@@ -438,7 +467,8 @@ export class App {
   }
 
   guardedRoute() {
-    if (['maintenance', 'key-guide'].includes(this.route.name) && !this.maintenanceUnlocked) {
+    if (['maintenance', 'key-guide'].includes(this.route.name)
+      && (!this.maintenanceUnlocked || !teacherKeySession.getState().active)) {
       return { name: 'key', params: {} };
     }
     return this.route;
@@ -447,7 +477,15 @@ export class App {
   renderRoute(route) {
     switch (route.name) {
       case 'atlas': return renderAtlasView();
-      case 'keys': return renderKeysView({ activities: PLANET_ATLAS_ACTIVITIES, access: this.access, artifacts: this.artifacts });
+      case 'numbers': return renderNumberExpeditionHost();
+      case 'number-tool': return getNumberTool(route.params.toolId)
+        ? renderNumberExpeditionHost({ toolId: route.params.toolId })
+        : renderNumberExpeditionHost();
+      case 'keys': return renderKeysView({ activities: ACTIVITIES, access: this.access, artifacts: this.artifacts });
+      case 'collection': {
+        const key = KEY_MANIFEST.find((entry) => entry.id === route.params.keyId && entry.type === 'collection');
+        return renderCollectionView({ key, activities: ACTIVITIES, artifacts: this.artifacts });
+      }
       case 'work': return renderWorkView({
         artifacts: this.artifacts.map((item) => this.withAudioPlayback(item, item.voiceExplanation)),
         responses: this.responses.map((item) => this.withAudioPlayback(item, item.voiceResponse)),
@@ -459,11 +497,14 @@ export class App {
       }
       case 'key': return renderKeyEntryView();
       case 'settings': return renderSettingsView({ settings: settingsForView(this.settings || {}) });
-      case 'maintenance': return renderMaintenanceView({ profiles: this.profiles });
+      case 'maintenance': return '<div id="teacher-key-room-host"></div>';
       case 'key-guide': return renderKeyGuide(KEY_MANIFEST);
       case 'activity': {
         const activity = getActivityById(route.params.activityId);
         const saved = this.artifacts.some((item) => item.activityId === activity?.id);
+        if (activity?.destinationId === 'number-expedition') {
+          return renderNumberExpeditionHost({ toolId: activity.toolId, activityId: activity.id });
+        }
         return activity ? renderActivityView(activity, this.activityState || defaultActivityState(activity), {
           savedBefore: saved,
           scaffold: this.settings?.scaffold || 'core',
@@ -479,12 +520,18 @@ export class App {
   }
 
   async mountRoute(route) {
-    if (route.name === 'key') {
+    if (route.name === 'key' || route.name === 'home') {
       const root = this.root.querySelector('[data-keypad-root]');
       if (root) this.keypad = new Keypad(root, { onComplete: (code, keypad) => this.handleKey(code, keypad) });
     }
     if (route.name === 'atlas') await this.mountOpenAtlas();
-    if (route.name === 'activity') await this.mountActivityAtlas();
+    if (route.name === 'numbers' || route.name === 'number-tool') await this.mountNumberExpedition(route);
+    if (route.name === 'activity') {
+      const activity = getActivityById(route.params.activityId);
+      if (activity?.destinationId === 'number-expedition') await this.mountNumberExpedition(route, activity);
+      else await this.mountActivityAtlas();
+    }
+    if (route.name === 'maintenance') await this.mountTeacherKeyRoom();
     if (this.root.querySelector('.modal-backdrop')) {
       requestAnimationFrame(() => this.root.querySelector('.modal-backdrop input, .modal-backdrop button')?.focus());
     }
@@ -495,6 +542,10 @@ export class App {
     this.keypad = null;
     this.map?.destroy();
     this.map = null;
+    this.numberExpedition?.destroy();
+    this.numberExpedition = null;
+    this.teacherRoom?.destroy();
+    this.teacherRoom = null;
     this.audioUrls.forEach((url) => revokeAudioObjectUrl(url));
     this.audioUrls = [];
   }
@@ -598,6 +649,14 @@ export class App {
     return this.AtlasMapClass;
   }
 
+  async getNumberExpeditionClass() {
+    if (!this.NumberExpeditionClass) {
+      const module = await import('../destinations/number-expedition/NumberExpedition.js');
+      this.NumberExpeditionClass = module.default;
+    }
+    return this.NumberExpeditionClass;
+  }
+
   async mountOpenAtlas() {
     const host = this.root.querySelector('#atlas-map');
     if (!host) return;
@@ -640,6 +699,57 @@ export class App {
         }
       }, 180);
     }
+  }
+
+  async mountNumberExpedition(route, activity = null) {
+    const host = this.root.querySelector('#number-expedition');
+    if (!host) return;
+    const NumberExpedition = await this.getNumberExpeditionClass();
+    if (!host.isConnected) return;
+    const toolId = activity?.toolId || route.params?.toolId || null;
+    this.numberExpedition = new NumberExpedition(host, {
+      toolId,
+      activity,
+      savedState: activity ? this.activityState : this.numberOpenStates.get(toolId),
+      scaffold: this.settings?.scaffold || 'core',
+      onChange: (state) => {
+        if (activity && this.teacherPreviewActivityId !== activity.id) {
+          this.activityState = state;
+          this.scheduleActivityStateSave();
+        } else if (activity) {
+          this.activityState = state;
+        } else {
+          this.numberOpenStates.set(toolId, state);
+        }
+      },
+      onSave: (payload, state) => this.saveNumberWork(payload, state),
+      onSpeak: (text) => this.speakVisible(text),
+      onToast: (message) => this.toast(message),
+    });
+  }
+
+  async mountTeacherKeyRoom() {
+    const host = this.root.querySelector('#teacher-key-room-host');
+    if (!host || !this.maintenanceUnlocked || !teacherKeySession.getState().active) return;
+    this.teacherRoom = new TeacherKeyRoomController(host, {
+      manifest: KEY_MANIFEST,
+      destinations: DESTINATIONS,
+      session: teacherKeySession,
+      profileCount: this.profiles.length,
+      onExit: (returnLocation) => this.exitTeacherKeyRoom(returnLocation),
+      onOpenKey: (key) => this.openTeacherKey(key),
+      onAddKeyToAllProfiles: (key) => this.addTeacherKeyToAllProfiles(key),
+      onExportBackup: () => this.exportBackup(),
+      onImportBackup: (file) => this.restoreBackup(file),
+      onInspectDestinations: () => this.inspectDestinations(),
+      onOpenResetTools: () => this.openTeacherResetTools(),
+      onFeedback: (message) => this.toast(message),
+      onError: (error) => {
+        console.error(error);
+        this.toast(error?.message || 'That teacher utility could not complete.');
+      },
+    });
+    await this.teacherRoom.mount();
   }
 
   prepareActivityMap(activity, state) {
@@ -686,21 +796,27 @@ export class App {
     }
     this.keyAttempts = 0;
     if (key.type === 'maintenance') {
+      const returnLocation = this.keyEntryOrigin || (this.route.name === 'key' ? { name: 'home', params: {} } : this.route);
+      teacherKeySession.open({ returnLocation });
       this.maintenanceUnlocked = true;
-      sessionStorage.setItem(MAINTENANCE_SESSION_KEY, 'true');
-      keypad.setMessage('Adult utility is ready.', 'success');
+      this.keyEntryOrigin = null;
+      keypad.setMessage('Teacher Key Room is ready.', 'success');
       await delay(320);
       navigate('maintenance');
       return;
     }
     if (!this.profile) return;
     try {
-      await grantKey(this.profile.id, key, { activities: PLANET_ATLAS_ACTIVITIES });
-      this.access = await syncGrantedActivities(this.profile.id, PLANET_ATLAS_ACTIVITIES);
+      await grantKey(this.profile.id, key, { activities: ACTIVITIES });
+      this.access = await syncGrantedActivities(this.profile.id, ACTIVITIES);
       keypad.setMessage(`${key.childFacingTitle || key.title} is ready.`, 'success');
       await delay(420);
       const activityIds = keyActivityIds(key);
       if (key.type === 'activity' && activityIds[0]) navigate('activity', activityIds[0]);
+      else if (key.type === 'collection') navigate('collection', key.id);
+      else if (key.type === 'destination' && key.destinationId === 'number-expedition') navigate('numbers');
+      else if (key.type === 'destination' && key.destinationId === 'planet-atlas') navigate('atlas');
+      else if (key.type === 'world') navigate('home');
       else {
         this.pendingToast = `${key.childFacingTitle || key.title} has been added to My Keys.`;
         navigate('keys');
@@ -716,6 +832,9 @@ export class App {
     const routeButton = event.target.closest('[data-route]');
     if (routeButton) {
       event.preventDefault();
+      if (routeButton.dataset.route === 'key' && this.route.name !== 'key') {
+        this.keyEntryOrigin = { name: this.route.name, params: { ...(this.route.params || {}) } };
+      }
       navigate(routeButton.dataset.route, routeButton.dataset.routeValue);
       return;
     }
@@ -947,6 +1066,8 @@ export class App {
     this.profileCreateMode = false;
     this.activityState = null;
     this.atlasOpenState = null;
+    this.numberOpenStates.clear();
+    this.numberVoiceExplanation = null;
     this.revisingArtifactId = null;
     this.planetQuestionVoice = null;
     await this.loadProfileData();
@@ -1008,16 +1129,17 @@ export class App {
     if (!this.activityState) return;
     const currentStep = Math.max(0, Math.min(ACTIVITY_STAGE_COUNT - 1, this.activityState.step || 0));
     this.activityState.step = Math.max(0, Math.min(ACTIVITY_STAGE_COUNT - 1, currentStep + amount));
-    await this.persistActivityState();
+    if (this.teacherPreviewActivityId !== this.activityState.activityId) await this.persistActivityState();
     await this.render({ preserveFocus: true });
   }
 
   scheduleActivityStateSave() {
     clearTimeout(this.activitySaveTimer);
-    if (!this.profile || !this.activityState?.activityId) return;
+    if (!this.profile || !this.activityState?.activityId || this.teacherPreviewActivityId === this.activityState.activityId) return;
     this.pendingActivitySave = {
       profileId: this.profile.id,
       activityId: this.activityState.activityId,
+      destinationId: getActivityById(this.activityState.activityId)?.destinationId || 'planet-atlas',
       state: typeof structuredClone === 'function'
         ? structuredClone(this.activityState)
         : { ...this.activityState },
@@ -1039,7 +1161,8 @@ export class App {
     const profileId = pending?.profileId || this.profile.id;
     const activityId = pending?.activityId || this.activityState.activityId;
     const state = pending?.state || this.activityState;
-    await saveActivityState(profileId, activityId, state, { destinationId: 'planet-atlas' });
+    const destinationId = pending?.destinationId || getActivityById(activityId)?.destinationId || 'planet-atlas';
+    await saveActivityState(profileId, activityId, state, { destinationId });
   }
 
   async flushActivityStateSave() {
@@ -1048,11 +1171,15 @@ export class App {
     const pending = this.pendingActivitySave;
     this.pendingActivitySave = null;
     if (!pending) return;
-    await saveActivityState(pending.profileId, pending.activityId, pending.state, { destinationId: 'planet-atlas' });
+    await saveActivityState(pending.profileId, pending.activityId, pending.state, { destinationId: pending.destinationId || getActivityById(pending.activityId)?.destinationId || 'planet-atlas' });
   }
 
   async saveAtlasSnapshot(question = '', suppliedSnapshot = null, context = {}) {
     if (!this.profile || !this.map) return;
+    if (context.activityId && context.activityId === this.teacherPreviewActivityId) {
+      this.toast('Teacher preview is not attached to a learner. Enter the activity key in Children’s View to save work.');
+      return;
+    }
     if (question) this.map.setQuestion(question);
     const snapshot = suppliedSnapshot || this.map.createSnapshot();
     const sourceActivityId = context.activityId || null;
@@ -1097,8 +1224,56 @@ export class App {
     navigate('work', artifact.id);
   }
 
+  async saveNumberWork(payload, state) {
+    if (!this.profile || !payload?.structuredContent?.modelState) return;
+    if (payload.keyActivityId && payload.keyActivityId === this.teacherPreviewActivityId) {
+      this.toast('Teacher preview is not attached to a learner. Enter the activity key in Children’s View to save work.');
+      return;
+    }
+    const activity = payload.keyActivityId ? getActivityById(payload.keyActivityId) : null;
+    const revisionTarget = this.revisingArtifactId
+      ? this.artifacts.find((item) => item.id === this.revisingArtifactId && item.destinationId === 'number-expedition')
+      : null;
+    const existing = revisionTarget || (activity
+      ? this.artifacts.find((item) => (
+        item.activityId === activity.id
+        && item.artefactType === payload.artefactType
+        && !item.parentVersionId
+      ))
+      : null);
+    const changes = {
+      ...payload,
+      voiceExplanation: activity ? this.activityState?.voiceExplanation || null : this.numberVoiceExplanation,
+      structuredContent: {
+        ...payload.structuredContent,
+        modelState: state || payload.structuredContent.modelState,
+        savedAt: new Date().toISOString(),
+      },
+    };
+    const record = existing
+      ? await updateArtefact(this.profile.id, existing.id, changes, { reason: 'revisited mathematical model' })
+      : await createArtefact(this.profile.id, changes);
+    if (activity) {
+      await linkArtefactToActivityAccess(this.profile.id, activity.id, record.id);
+      await recordActivityVisit(this.profile.id, activity, { savedArtefactId: record.id });
+    }
+    this.revisingArtifactId = null;
+    this.numberVoiceExplanation = null;
+    await this.loadProfileData();
+    this.pendingToast = existing
+      ? 'A new mathematical version was saved. The earlier one is still available.'
+      : this.persistenceIsDurable()
+        ? 'Your mathematical model is safe in My Work.'
+        : 'This model is saved for this open session. Export a backup before closing.';
+    navigate('work', record.id);
+  }
+
   async saveKeyActivity() {
     if (!this.profile || !this.activityState) return;
+    if (this.activityState.activityId === this.teacherPreviewActivityId) {
+      this.toast('Teacher preview is not attached to a learner. Enter the activity key in Children’s View to save work.');
+      return;
+    }
     const activity = getActivityById(this.activityState.activityId);
     if (!activity) return;
     this.activityState.mapState = this.map?.getState() || this.activityState.mapState;
@@ -1199,6 +1374,8 @@ export class App {
       ? 'planet-question'
       : this.route.name === 'activity'
         ? `activity:${this.route.params.activityId}`
+        : this.route.name === 'number-tool'
+          ? `number-tool:${this.route.params.toolId}`
         : 'unknown';
     if (this.recording) {
       if (this.recording.context !== context || this.recording.profileId !== this.profile?.id) {
@@ -1211,13 +1388,16 @@ export class App {
       const contextStillActive = activeRecording.profileId === this.profile?.id
         && (activeRecording.context === 'planet-question'
           ? Boolean(this.root.querySelector('[data-modal="planet-question"]'))
-          : activeRecording.context === `activity:${this.route.params.activityId}`);
+          : activeRecording.context.startsWith('activity:')
+            ? activeRecording.context === `activity:${this.route.params.activityId}`
+            : activeRecording.context === `number-tool:${this.route.params.toolId}`);
       if (result.status === 'finished' && contextStillActive) {
         if (context === 'planet-question') this.planetQuestionVoice = result.blob;
         if (context.startsWith('activity:') && this.activityState?.activityId === context.slice('activity:'.length)) {
           this.activityState.voiceExplanation = result.blob;
           this.scheduleActivityStateSave();
         }
+        if (context.startsWith('number-tool:')) this.numberVoiceExplanation = result.blob;
         button.textContent = 'Record again';
         if (status) status.textContent = `Voice saved locally · ${Math.max(1, Math.round(result.durationMs / 1000))} seconds`;
       }
@@ -1267,11 +1447,23 @@ export class App {
     const activity = getActivityById(artifact.activityId);
     if (activity) {
       this.revisingArtifactId = artifact.id;
-      this.activityState = { ...normaliseActivityState(activity, artifact.content), step: 1 };
-      await saveActivityState(this.profile.id, activity.id, this.activityState, { destinationId: 'planet-atlas' });
+      this.activityState = activity.destinationId === 'number-expedition'
+        ? { ...(artifact.content?.modelState || {}), activityId: activity.id, toolId: activity.toolId }
+        : { ...normaliseActivityState(activity, artifact.content), step: 1 };
+      await saveActivityState(this.profile.id, activity.id, this.activityState, { destinationId: activity.destinationId });
       this.pendingToast = 'The original is safe. Changes will become a new version when you save.';
       navigate('activity', activity.id);
       return;
+    }
+    if (artifact.destinationId === 'number-expedition' && artifact.content?.modelState) {
+      const toolId = artifact.content.modelState.toolId;
+      if (getNumberTool(toolId)) {
+        this.revisingArtifactId = artifact.id;
+        this.numberOpenStates.set(toolId, artifact.content.modelState);
+        this.pendingToast = 'The original is safe. Saving will create a new version.';
+        navigate('number-tool', toolId);
+        return;
+      }
     }
     if (artifact.content?.viewState || artifact.content?.mapState) {
       this.revisingArtifactId = artifact.id;
@@ -1341,6 +1533,54 @@ export class App {
     navigate('work');
   }
 
+  restoreRouteLocation(location) {
+    const route = location && typeof location === 'object' ? location : { name: 'home', params: {} };
+    if (route.name === 'activity' && route.params?.activityId) navigate('activity', route.params.activityId);
+    else if (route.name === 'collection' && route.params?.keyId) navigate('collection', route.params.keyId);
+    else if (route.name === 'work-detail' && route.params?.artifactId) navigate('work', route.params.artifactId);
+    else if (route.name === 'number-tool' && route.params?.toolId) navigate('number-tool', route.params.toolId);
+    else navigate(route.name || 'home');
+  }
+
+  async exitTeacherKeyRoom(returnLocation = null) {
+    if (teacherKeySession.getState().active) returnLocation = teacherKeySession.close() || returnLocation;
+    this.maintenanceUnlocked = false;
+    this.restoreRouteLocation(returnLocation || { name: 'home', params: {} });
+  }
+
+  async openTeacherKey(key) {
+    if (!key || key.type === 'maintenance') return;
+    const activityId = keyActivityIds(key)[0];
+    const activity = activityId ? getActivityById(activityId) : null;
+    if (teacherKeySession.getState().active) teacherKeySession.close();
+    this.maintenanceUnlocked = false;
+    if (key.type === 'activity' && activity) {
+      this.teacherPreviewActivityId = activity.id;
+      navigate('activity', activity.id);
+    }
+    else if (key.type === 'collection') navigate('collection', key.id);
+    else if (key.destinationId === 'number-expedition') navigate('numbers');
+    else if (key.destinationId === 'planet-atlas') navigate('atlas');
+    else navigate('home');
+  }
+
+  async addTeacherKeyToAllProfiles(key) {
+    if (!key || key.type === 'maintenance') throw new Error('Teacher entrance codes cannot be added to learner profiles.');
+    await grantKeyToEveryProfile(key, { activities: ACTIVITIES, confirm: true });
+    if (this.profile) await this.loadProfileData();
+    this.toast(`${key.childFacingTitle || key.title} was added to every local profile.`);
+  }
+
+  async inspectDestinations() {
+    this.modalHTML = `<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="destination-inspect-title"><div class="modal-head"><div><p class="eyebrow">Product map</p><h2 id="destination-inspect-title">Current destinations</h2></div><button class="icon-button" type="button" data-action="close-modal" aria-label="Close">×</button></div><div class="modal-body stack">${DESTINATIONS.map((destination) => `<div class="spread"><strong>${escapeHTML(destination.title)}</strong><span class="small muted">${destination.active ? 'Available now' : `Registered for Build ${destination.activationBuild}`}</span></div>`).join('')}</div></section></div>`;
+    await this.render({ preserveFocus: true });
+  }
+
+  async openTeacherResetTools() {
+    this.modalHTML = `<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="reset-tools-title"><div class="modal-head"><div><p class="eyebrow">Separated device actions</p><h2 id="reset-tools-title">Reset tools</h2></div><button class="icon-button" type="button" data-action="close-modal" aria-label="Close">×</button></div><div class="modal-body stack"><p>Choose one learner before removing anything. Every action explains its exact scope and asks again.</p>${this.profiles.map((profile) => `<div class="spread"><span><span aria-hidden="true">${profileSymbolIcon(profile.symbol)}</span> ${escapeHTML(printableProfileName(profile))}</span><button class="button secondary" type="button" data-action="profile-tools" data-profile-id="${escapeAttr(profile.id)}">Manage this learner…</button></div>`).join('') || '<p class="muted">No local learner profiles.</p>'}<details class="work-more-actions"><summary>Whole-device reset</summary><div class="stack"><button class="button danger" type="button" data-action="confirm-clear-all">Clear every local profile and piece of work…</button></div></details></div></section></div>`;
+    await this.render({ preserveFocus: true });
+  }
+
   async exportBackup() {
     await downloadBackup({ appVersion: APP_VERSION });
     this.toast('The local backup was prepared. Keep the downloaded file somewhere safe.');
@@ -1370,7 +1610,7 @@ export class App {
       this.toast('That code is not an active child pathway key.');
       return;
     }
-    await grantKeyToEveryProfile(key, { activities: PLANET_ATLAS_ACTIVITIES, confirm: true });
+    await grantKeyToEveryProfile(key, { activities: ACTIVITIES, confirm: true });
     this.modalHTML = '';
     if (this.profile) await this.loadProfileData();
     await this.render();
@@ -1426,10 +1666,14 @@ export class App {
     this.access = [];
     this.artifacts = [];
     this.responses = [];
+    this.activityState = null;
+    this.atlasOpenState = null;
+    this.numberOpenStates.clear();
+    this.numberVoiceExplanation = null;
     this.modalHTML = '';
     this.profileModalOpen = true;
     this.profileCreateMode = true;
-    sessionStorage.removeItem(MAINTENANCE_SESSION_KEY);
+    if (teacherKeySession.getState().active) teacherKeySession.close();
     this.maintenanceUnlocked = false;
     navigate('home');
   }

@@ -444,6 +444,28 @@
 .world-intro h1 { max-width: 12ch; color: #243d4c; text-wrap: balance; }
 .world-intro .lede { color: #40555c; }
 
+.home-key-station {
+  position: absolute;
+  top: clamp(1rem, 3vw, 2.5rem);
+  right: clamp(1rem, 3vw, 2.5rem);
+  z-index: 6;
+  width: min(15.5rem, 36%);
+  padding: 0.8rem;
+  border: 1px solid rgb(48 72 95 / 0.22);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--paper-light) 91%, transparent);
+  box-shadow: var(--shadow-soft);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.home-key-station h2 { margin: 0 0 0.55rem; font-size: 1.35rem; }
+.home-key-station .keypad-wrap { gap: 0.5rem; }
+.home-key-station .key-digits { gap: 0.3rem; }
+.home-key-station .key-digit { min-height: 40px; font-size: 1.65rem; }
+.home-key-station .keypad { grid-template-columns: repeat(4, 1fr); gap: 0.28rem; }
+.home-key-station .keypad button { min-height: 40px; font-size: 1rem; }
+.home-key-station .key-message { margin: 0; font-size: 0.7rem; line-height: 1.25; }
+
 .atlas-landmark {
   position: absolute;
   right: clamp(1.2rem, 7vw, 7rem);
@@ -476,6 +498,53 @@
 
 .atlas-landmark:hover .atlas-orb,
 .atlas-landmark:focus-visible .atlas-orb { transform: rotate(-4deg) scale(1.035); }
+
+.number-landmark {
+  position: absolute;
+  bottom: clamp(4.5rem, 10vw, 7.5rem);
+  left: clamp(3rem, 18vw, 15rem);
+  z-index: 4;
+  display: grid;
+  width: clamp(9rem, 20vw, 14rem);
+  min-height: 12rem;
+  place-items: end center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.number-cairn { display: grid; width: 78%; gap: 3px; place-items: center; }
+.number-cairn i {
+  display: grid;
+  height: 34px;
+  place-items: center;
+  border: 2px solid rgb(244 239 229 / 0.82);
+  border-radius: 7px;
+  background: #536f75;
+  box-shadow: 0 8px 18px rgb(30 55 67 / 0.18);
+  color: var(--paper-light);
+  font-style: normal;
+  font-size: 0.74rem;
+  font-weight: 800;
+  transition: transform 180ms ease;
+}
+.number-cairn i:nth-child(1) { width: 38%; }
+.number-cairn i:nth-child(2) { width: 52%; background: #6c8279; }
+.number-cairn i:nth-child(3) { width: 68%; background: #8b876b; }
+.number-cairn i:nth-child(4) { width: 84%; background: #986f5c; }
+.number-landmark:hover .number-cairn i,
+.number-landmark:focus-visible .number-cairn i { transform: translateY(-3px); }
+.number-landmark .atlas-label { right: 62%; bottom: -2%; }
+
+.key-environments { display: grid; gap: 1.4rem; }
+.key-environment { padding: 1rem; border-top: 2px solid var(--indigo); background: color-mix(in srgb,var(--paper-light),transparent 8%); }
+.key-path-list { display: grid; gap: 0; }
+.key-path-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 1rem; align-items: center; padding: .75rem 0; border-top: 1px solid var(--line); }
+.key-path-row h3,.key-path-row p { margin: 0; }
+.key-path-row>div>p:last-child { margin-top: .22rem; color: var(--muted); }
+.key-row-meta { display: flex; align-items: center; gap: .7rem; color: var(--muted); font-size: .78rem; }
+.maths-preview-values { font-variant-numeric: tabular-nums; }
+.maths-outcome { display:grid; grid-template-columns:auto 1fr; gap:1rem; align-items:start; }
+.maths-outcome-mark { display:grid; place-items:center; width:64px; height:64px; border:2px solid var(--indigo); border-radius:50%; color:var(--indigo); font-size:1.8rem; }
 
 .atlas-label {
   position: absolute;
@@ -703,10 +772,15 @@ html[data-scaffold="intensive"] .activity-prompt input {
 
 @media (max-width: 650px) {
   .home-world { min-height: 78svh; }
-  .world-intro { padding-bottom: 18rem; }
-  .atlas-landmark { right: 1rem; bottom: 5.5rem; width: 11rem; }
+  .world-intro { max-width: 70%; padding-bottom: 23rem; }
+  .home-key-station { position: absolute; top: 11rem; right: .8rem; width: 13rem; }
+  .atlas-landmark { right: .2rem; bottom: 4.2rem; width: 9.5rem; }
+  .number-landmark { left: .4rem; bottom: 4.2rem; width: 9rem; min-height:10rem; }
   .atlas-label { right: 60%; bottom: -7%; max-width: 10rem; }
+  .number-landmark .atlas-label { right: auto; left: 55%; }
   .world-question { display: none; }
+  .key-path-row { grid-template-columns: 1fr; }
+  .key-row-meta { justify-content:space-between; }
   .activity-banner { align-items: flex-start; flex-direction: column; }
   .atlas-save-strip { grid-template-columns: 1fr; }
   .atlas-save-strip label { grid-column: auto; }

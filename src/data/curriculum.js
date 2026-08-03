@@ -1,3 +1,5 @@
+import { NUMBER_CURRICULUM_RECORDS } from './numberExpedition.js';
+
 /**
  * Central curriculum contract for the complete ten-build product.
  *
@@ -410,66 +412,7 @@ const scienceRecords = [
   }),
 ];
 
-const mathematicsRecords = [
-  curriculumRecord({
-    id: 'math-place-value-four-digit',
-    subject: 'mathematics',
-    destinationIds: ['number-expedition'],
-    objectives: [
-      'Represent four-digit numbers and understand thousands, hundreds, tens and ones.',
-      'Use standard and non-standard partitioning.',
-      'Find 10, 100 and 1,000 more or less.',
-      'Compare and order numbers using <, > and =.',
-      'Position and estimate on blank number lines.',
-    ],
-    concepts: ['place-value', 'four-digit-number', 'partitioning', 'comparison', 'number-line', 'estimation'],
-    vocabulary: ['thousand', 'hundred', 'ten', 'one', 'digit', 'partition', 'greater than', 'less than', 'equal to', 'estimate'],
-    likelyMisconceptions: ['A digit has the same value in every position.', 'Non-standard partitioning changes the number.', 'The greater-than sign is an arrow pointing to the answer.'],
-    relatedConcepts: ['base-ten', 'equivalence', 'magnitude', 'interval'],
-    untaughtFriendlyEntry: 'Build and regroup a visible quantity before attaching formal place-value language.',
-    possibleKeyCheck: 'Rebuild the same number in a different partition and justify equivalence.',
-    savedArtefactTypeIds: ['place-value-model', 'number-line-estimate'],
-    crossCurricularConnections: ['geographical-data', 'map-distance', 'population-and-measurement'],
-  }),
-  curriculumRecord({
-    id: 'math-rounding-number-systems',
-    subject: 'mathematics',
-    destinationIds: ['number-expedition', 'climate-laboratory'],
-    objectives: [
-      'Round numbers to the nearest 10, 100 and 1,000 and use rounding to estimate answers.',
-      'Count through zero and interpret negative numbers, intervals and differences.',
-      'Read Roman numerals to 100.',
-    ],
-    concepts: ['rounding', 'estimation', 'negative-number', 'zero', 'interval', 'difference', 'roman-numeral'],
-    vocabulary: ['round', 'nearest', 'estimate', 'zero', 'negative', 'interval', 'difference', 'Roman numeral'],
-    likelyMisconceptions: ['Rounding always makes a number larger.', 'Zero is the smallest possible number.', 'The visual length between tick marks changes their numerical interval.'],
-    relatedConcepts: ['number-line', 'temperature', 'magnitude', 'place-value'],
-    untaughtFriendlyEntry: 'Move quantities and temperatures on continuous visual lines before applying symbolic rules.',
-    possibleKeyCheck: 'Place a value between two benchmarks and explain which benchmark is nearer.',
-    savedArtefactTypeIds: ['rounding-model', 'negative-number-line'],
-    crossCurricularConnections: ['temperature', 'climate-data', 'timeline'],
-  }),
-  curriculumRecord({
-    id: 'math-addition-subtraction-reasoning',
-    subject: 'mathematics',
-    destinationIds: ['number-expedition'],
-    objectives: [
-      'Use formal addition without exchange, with one exchange and with multiple exchanges, including five-digit totals.',
-      'Use formal subtraction with exchange and across zero.',
-      'Select efficient strategies and use inverse operations.',
-      'Solve missing-number calculations and one-step and two-step problems.',
-      'Identify required operations and prove or disprove statements.',
-    ],
-    concepts: ['addition', 'subtraction', 'exchange', 'inverse', 'missing-number', 'operation-choice', 'proof'],
-    vocabulary: ['add', 'subtract', 'exchange', 'total', 'difference', 'inverse', 'efficient', 'operation', 'prove', 'disprove'],
-    likelyMisconceptions: ['Exchange adds or removes value.', 'A problem’s operation is decided by one keyword.', 'Inverse checking proves that the chosen model matches the context.'],
-    relatedConcepts: ['place-value', 'equivalence', 'calculation', 'reasoning'],
-    untaughtFriendlyEntry: 'Regroup visible quantities while total value remains fixed, then connect to the written method.',
-    possibleKeyCheck: 'Inspect an exchange, locate the first step that changes the value and repair it.',
-    savedArtefactTypeIds: ['calculation-model', 'reasoning-proof'],
-    crossCurricularConnections: ['environmental-data', 'measurement', 'claim-testing'],
-  }),
-];
+const mathematicsRecords = NUMBER_CURRICULUM_RECORDS.map(curriculumRecord);
 
 const englishRecords = [
   curriculumRecord({

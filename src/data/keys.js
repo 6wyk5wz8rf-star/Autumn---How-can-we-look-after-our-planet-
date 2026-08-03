@@ -1,5 +1,10 @@
 import { ACTIVITIES } from './activities.js';
 import { DESTINATIONS } from './destinations.js';
+import {
+  NUMBER_COLLECTIONS,
+  NUMBER_DESTINATION_KEY,
+  NUMBER_EXPEDITION_ACTIVITIES,
+} from './numberExpedition.js';
 import { parseRoute } from '../utils/router.js';
 
 /**
@@ -18,22 +23,22 @@ export const KEY_TYPES = Object.freeze({
   MAINTENANCE: 'maintenance',
 });
 
-const activityGrant = (activityIds, includeFuture = false) => ({
+const activityGrant = (activityIds, includeFuture = false, destinationId = 'planet-atlas') => ({
   resource: 'key-activity',
-  destinationId: 'planet-atlas',
+  destinationId,
   activityIds,
   includeFuture,
 });
 
-const activityKey = ({ code, id, activityId, title, description, curriculumTags, outcome, quickUse = true }) => ({
+const activityKey = ({ code, id, activityId, title, description, curriculumTags, outcome, quickUse = true, destinationId = 'planet-atlas' }) => ({
   code,
   id,
   type: KEY_TYPES.ACTIVITY,
-  destinationId: 'planet-atlas',
-  destination: 'planet-atlas',
+  destinationId,
+  destination: destinationId,
   activityIds: [activityId],
   permissionsGranted: [`activity:${activityId}`],
-  grants: [activityGrant([activityId])],
+  grants: [activityGrant([activityId], false, destinationId)],
   route: `#/activity/${activityId}`,
   title,
   childFacingTitle: title,
@@ -51,7 +56,7 @@ const activityKey = ({ code, id, activityId, title, description, curriculumTags,
   },
 });
 
-export const KEY_MANIFEST = Object.freeze([
+const BUILD_1_KEYS = [
   activityKey({
     code: '5842',
     id: 'key-atlas-earth-different-forms',
@@ -296,6 +301,132 @@ export const KEY_MANIFEST = Object.freeze([
       displayCard: false,
     },
   },
+];
+
+const NUMBER_ACTIVITY_KEYS = NUMBER_EXPEDITION_ACTIVITIES.map((activity) => activityKey({
+  code: activity.keyCode,
+  id: `key-number-${activity.id}`,
+  activityId: activity.id,
+  title: activity.title,
+  description: activity.curriculumObjective,
+  curriculumTags: activity.curriculumTags,
+  outcome: activity.outcome.artefactTypeId,
+  quickUse: [1, 4, 5, 7, 9, 17, 23, 28].includes(activity.order),
+  destinationId: 'number-expedition',
+})).map((key, index) => Object.freeze({
+  ...key,
+  teacherQuickUse: [1, 4, 5, 7, 9, 17, 23, 28].includes(index + 1),
+  scale: 'Activity',
+}));
+
+const NUMBER_COLLECTION_KEYS = NUMBER_COLLECTIONS.map((collection) => ({
+  code: collection.code,
+  id: `key-${collection.id}`,
+  type: KEY_TYPES.COLLECTION,
+  scale: 'Collection',
+  destinationId: 'number-expedition',
+  destination: 'number-expedition',
+  activityIds: collection.activityIds,
+  permissionsGranted: collection.activityIds.map((id) => `activity:${id}`),
+  grants: [activityGrant(collection.activityIds, false, 'number-expedition')],
+  route: '#/keys',
+  title: collection.title,
+  childFacingTitle: collection.title,
+  description: collection.description,
+  curriculumTags: ['mathematics', 'year-4', 'autumn-1'],
+  savedOutcomeType: null,
+  active: true,
+  printGuide: {
+    group: 'Number Expedition collections',
+    quickUse: true,
+    purpose: collection.description,
+    usefulMoments: ['encounter', 'during-teaching', 'after-teaching', 'revisit'],
+    expectedOutcome: `${collection.activityIds.length} revisable mathematical pathways`,
+    displayCard: true,
+  },
+}));
+
+const NUMBER_DESTINATION_MANIFEST_KEY = {
+  code: NUMBER_DESTINATION_KEY.code,
+  id: NUMBER_DESTINATION_KEY.id,
+  type: KEY_TYPES.DESTINATION,
+  scale: 'Environment',
+  destinationId: 'number-expedition',
+  destination: 'number-expedition',
+  activityIds: [],
+  permissionsGranted: ['destination:number-expedition:*'],
+  grants: [activityGrant(['*'], true, 'number-expedition')],
+  route: '#/numbers',
+  title: NUMBER_DESTINATION_KEY.title,
+  childFacingTitle: NUMBER_DESTINATION_KEY.title,
+  description: NUMBER_DESTINATION_KEY.description,
+  curriculumTags: ['number-expedition', 'mathematics', 'year-4', 'autumn-1'],
+  savedOutcomeType: null,
+  active: true,
+  printGuide: {
+    group: 'Number Expedition collections',
+    quickUse: false,
+    purpose: NUMBER_DESTINATION_KEY.description,
+    usefulMoments: ['revisit'],
+    expectedOutcome: 'All Number Expedition pathways in My Keys',
+    displayCard: true,
+  },
+};
+
+export const TEACHER_KEY_CODE = '8584';
+
+const TEACHER_KEY = {
+  code: TEACHER_KEY_CODE,
+  id: 'key-teacher-key-room',
+  type: KEY_TYPES.MAINTENANCE,
+  scale: 'Teacher entrance',
+  destinationId: null,
+  destination: null,
+  activityIds: [],
+  permissionsGranted: [],
+  grants: [{
+    resource: 'adult-utility',
+    capabilities: [
+      'browse-key-library',
+      'search-key-library',
+      'display-key-full-screen',
+      'print-key-guide',
+      'print-key-card',
+      'manage-teacher-favourites',
+      'export-backup',
+      'import-backup',
+      'inspect-local-profiles',
+      'add-key-to-device-profiles',
+      'reset-profile-keys',
+      'clear-profile-work',
+      'clear-all-local-data',
+    ],
+  }],
+  route: '#/maintenance',
+  title: 'Teacher Key Room',
+  childFacingTitle: 'Teacher Key Room',
+  description: 'Open the session-only teacher key library and local product utilities.',
+  curriculumTags: [],
+  savedOutcomeType: null,
+  active: true,
+  reserved: true,
+  printGuide: {
+    group: 'Teacher entrance',
+    quickUse: false,
+    purpose: 'Open the Teacher Key Room for this session only.',
+    usefulMoments: ['adult-use'],
+    expectedOutcome: 'No learner outcome',
+    displayCard: false,
+  },
+};
+
+/** One central source of truth for child routes, teacher search and printing. */
+export const KEY_MANIFEST = Object.freeze([
+  ...BUILD_1_KEYS,
+  ...NUMBER_ACTIVITY_KEYS,
+  ...NUMBER_COLLECTION_KEYS,
+  NUMBER_DESTINATION_MANIFEST_KEY,
+  TEACHER_KEY,
 ]);
 
 const KEY_CODE_PATTERN = /^\d{4}$/;
@@ -415,6 +546,7 @@ export function validateKeyManifest(
   const seenIds = new Set();
   const activityIds = new Set(activities.map((activity) => activity.id));
   const destinationIds = new Set(destinations.map((destination) => destination.id));
+  let teacherCodeCount = 0;
 
   for (const [index, key] of manifest.entries()) {
     const label = key?.id || `entry ${index}`;
@@ -430,6 +562,12 @@ export function validateKeyManifest(
     if (isObviousKeyCode(key.code)) errors.push(`Key ${label} uses an obvious or repeated sequence.`);
     if (seenCodes.has(key.code)) errors.push(`Duplicate key code: ${key.code}.`);
     seenCodes.add(key.code);
+    if (key.code === TEACHER_KEY_CODE) {
+      teacherCodeCount += 1;
+      if (key.id !== 'key-teacher-key-room' || key.type !== KEY_TYPES.MAINTENANCE) {
+        errors.push(`${TEACHER_KEY_CODE} is permanently reserved for the Teacher Key Room.`);
+      }
+    }
 
     if (!ALLOWED_TYPES.has(key.type)) errors.push(`Key ${label} has unknown type ${key.type}.`);
     if (!Array.isArray(key.grants) || key.grants.length === 0) errors.push(`Key ${label} must declare grants.`);
@@ -439,7 +577,7 @@ export function validateKeyManifest(
       const expectedRoute = ({
         [KEY_TYPES.ACTIVITY]: 'activity',
         [KEY_TYPES.COLLECTION]: 'keys',
-        [KEY_TYPES.DESTINATION]: 'atlas',
+        [KEY_TYPES.DESTINATION]: key.destinationId === 'number-expedition' ? 'numbers' : 'atlas',
         [KEY_TYPES.WORLD]: 'home',
         [KEY_TYPES.MAINTENANCE]: 'maintenance',
       })[key.type];
@@ -480,6 +618,8 @@ export function validateKeyManifest(
       }
     }
   }
+
+  if (teacherCodeCount !== 1) errors.push(`${TEACHER_KEY_CODE} must appear exactly once as the Teacher Key Room entrance.`);
 
   return { valid: errors.length === 0, errors };
 }

@@ -2,6 +2,8 @@ import './styles/base.css';
 import './styles/layout.css';
 import './styles/components.css';
 import './destinations/planet-atlas/atlas.css';
+import './destinations/number-expedition/number-expedition.css';
+import './teacher/teacherKeyRoom.css';
 import './styles/print.css';
 import App from './app/App.js';
 

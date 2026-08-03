@@ -1,3 +1,5 @@
+import { NUMBER_EXPEDITION_ACTIVITIES } from './numberExpedition.js';
+
 /**
  * Build 1 guided pathways for Planet Atlas.
  *
@@ -400,8 +402,11 @@ export const PLANET_ATLAS_ACTIVITIES = Object.freeze([
   }),
 ]);
 
-/** All currently active Key Activities. Later builds append their own records. */
-export const ACTIVITIES = PLANET_ATLAS_ACTIVITIES;
+/** All currently active Key Activities, shared by routing, keys and persistence. */
+export const ACTIVITIES = Object.freeze([
+  ...PLANET_ATLAS_ACTIVITIES,
+  ...NUMBER_EXPEDITION_ACTIVITIES,
+]);
 
 /** Return an activity by permanent ID, or null when absent. */
 export function getActivityById(id, activities = ACTIVITIES) {

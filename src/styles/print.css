@@ -14,7 +14,12 @@
     font-size: 10.5pt;
   }
 
-  body { background: white !important; }
+  body {
+    color: #000 !important;
+    background: white !important;
+    -webkit-print-color-adjust: economy;
+    print-color-adjust: economy;
+  }
   body::before,
   .app-header,
   .primary-nav,
@@ -62,4 +67,226 @@
   .atlas-map svg,
   .saved-map-preview { max-height: 150mm; }
   .saved-outcome-template { break-inside: avoid; }
+
+  /* Number Expedition prints the mathematical object, never its controls. */
+  .number-field-station,
+  .number-workspace,
+  .maths-outcome {
+    width: 100%;
+    max-width: none;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  .number-workspace-head {
+    display: block;
+    margin: 0 0 6mm;
+    padding-bottom: 4mm;
+    border-bottom: 0.75pt solid #000;
+  }
+
+  .number-workspace .eyebrow,
+  .number-workspace .lede,
+  .number-workspace .scaffold-cue,
+  .number-workspace .place-headings span,
+  .number-workspace .number-hero span {
+    color: #000 !important;
+  }
+
+  .maths-instrument-panel {
+    margin: 0;
+    padding: 5mm;
+    border: 0.75pt solid #000;
+    box-shadow: none;
+    background: #fff !important;
+  }
+
+  .number-hero,
+  .place-grid,
+  .paired-models,
+  .partition-equation,
+  .line-workbench,
+  .rounding-workbench,
+  .estimate-workbench,
+  .negative-workbench,
+  .roman-workbench,
+  .column-calculation,
+  .strategy-routes,
+  .fact-family,
+  .problem-workbench,
+  .statement-workbench,
+  .challenge-sheet,
+  .maths-outcome {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .number-hero strong,
+  .roman-answer,
+  .interval-readout strong,
+  .model-equation {
+    color: #000 !important;
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+
+  .place-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    overflow: visible !important;
+    border: 1.25pt solid #000 !important;
+    background: #fff !important;
+  }
+
+  .place-column {
+    min-width: 0 !important;
+    border-color: #000 !important;
+  }
+
+  .counter-cluster i {
+    border-color: #000 !important;
+    background: #fff !important;
+  }
+
+  .representation-strip,
+  .maths-feedback,
+  .estimate-bridge > div,
+  .strategy-routes article,
+  .evidence-cards > *,
+  .challenge-sheet,
+  .exchange-trace p {
+    color: #000 !important;
+    border-color: #000 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  .maths-feedback {
+    border-left: 1.5pt solid #000 !important;
+  }
+
+  .guided-notice button,
+  .roman-stones {
+    display: none !important;
+  }
+
+  .exchange-trace {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3mm;
+    overflow: visible !important;
+  }
+
+  .exchange-trace p {
+    min-width: 0 !important;
+    margin: 0;
+    break-inside: avoid;
+  }
+
+  /* Keep the SVG's 1000:180 geometry intact so visual distance remains true. */
+  svg.scaled-number-line {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    aspect-ratio: 50 / 9;
+    overflow: visible !important;
+  }
+
+  .scaled-number-line line {
+    stroke: #000 !important;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .scaled-number-line text,
+  .scaled-number-line .marker-label {
+    fill: #000 !important;
+  }
+
+  .scaled-number-line .line-marker {
+    fill: #000 !important;
+    stroke: #000 !important;
+  }
+
+  /* Every place occupies one fixed column, including zero placeholders. */
+  .column-calculation {
+    width: 140mm;
+    max-width: 100%;
+    margin: 6mm auto;
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+
+  .place-headings,
+  .column-row {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    width: 100%;
+  }
+
+  .place-headings span,
+  .column-row span {
+    display: block;
+    min-width: 0;
+    text-align: center;
+  }
+
+  .column-row {
+    color: #000 !important;
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 28pt !important;
+    line-height: 1.12 !important;
+  }
+
+  .column-rule {
+    height: 1.5pt !important;
+    background: #000 !important;
+  }
+
+  .column-row.operator b {
+    left: 0;
+    color: #000 !important;
+    transform: translateX(-125%);
+  }
+
+  .make-explain {
+    display: block;
+    margin-top: 6mm;
+    padding: 5mm 0 0;
+    border-top: 0.75pt solid #000;
+  }
+
+  .make-explain textarea,
+  .partition-equation input,
+  .number-card input,
+  .roman-pair input,
+  .challenge-sheet input,
+  .challenge-sheet textarea,
+  .challenge-sheet select {
+    border: 0.75pt solid #000 !important;
+    background: #fff !important;
+  }
+
+  /* Printing from Board View yields the underlying model without board chrome. */
+  .board-view { display: none !important; }
+
+  /* Today’s Key sheets stay legible, economical and safe to cut out. */
+  .teacher-print-card-sheet {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8mm !important;
+  }
+
+  .teacher-print-key-card {
+    color: #000 !important;
+    border-color: #000 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .teacher-print-key-card__code {
+    color: #000 !important;
+    font-variant-numeric: lining-nums tabular-nums;
+    white-space: nowrap;
+  }
 }

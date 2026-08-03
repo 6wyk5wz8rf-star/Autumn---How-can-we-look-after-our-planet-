@@ -34,6 +34,7 @@ import {
 } from '../src/data/conceptGraph.js';
 import {
   GLOSSARY,
+  REQUIRED_MATHEMATICS_TERMS,
   REQUIRED_ART_TERMS,
   REQUIRED_ATLAS_TERMS,
   getGlossaryEntriesByTerm,
@@ -57,14 +58,15 @@ const EXPECTED_ACTIVITY_IDS = [
   'understand-before-action',
 ];
 
-test('all ten destinations are registered while only Planet Atlas is active', () => {
+test('all ten destinations are registered while Build 2 activates Atlas and Number Expedition', () => {
   assert.equal(DESTINATIONS.length, 10);
   assert.deepEqual(DESTINATIONS.map(({ ordinal }) => ordinal), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   assert.equal(new Set(DESTINATIONS.map(({ id }) => id)).size, 10);
-  assert.deepEqual(getActiveDestinations().map(({ id }) => id), ['planet-atlas']);
+  assert.deepEqual(getActiveDestinations().map(({ id }) => id), ['planet-atlas', 'number-expedition']);
   assert.equal(getDestinationById('planet-atlas')?.route, '#/atlas');
   assert.equal(getDestinationById('tides-of-change-studio')?.activationBuild, 10);
-  assert.equal(getDestinationById('number-expedition')?.active, false);
+  assert.equal(getDestinationById('number-expedition')?.active, true);
+  assert.equal(getDestinationById('number-expedition')?.route, '#/numbers');
 });
 
 test('Planet Atlas exposes exactly eight substantial guided pathways', () => {
@@ -86,16 +88,31 @@ test('Planet Atlas exposes exactly eight substantial guided pathways', () => {
   }
 });
 
+test('Number Expedition exposes exactly 28 Autumn 1 pathways in seven regions', () => {
+  const numberActivities = getActivitiesForDestination('number-expedition');
+  assert.equal(numberActivities.length, 28);
+  assert.deepEqual(numberActivities.map(({ order }) => order), Array.from({ length: 28 }, (_, index) => index + 1));
+  assert.equal(new Set(numberActivities.map(({ regionId }) => regionId)).size, 7);
+  for (const activity of numberActivities) {
+    assert.equal(activity.active, true);
+    assert.ok(activity.curriculumObjective);
+    assert.ok(activity.toolId);
+    assert.ok(activity.keyCode);
+    assert.ok(activity.keyCheck?.unscored);
+    assert.ok(activity.outcome?.artefactTypeId);
+  }
+});
+
 test('the permanent key manifest is valid, unique and complete', () => {
   const validation = validateKeyManifest(KEY_MANIFEST);
   assert.equal(validation.valid, true, validation.errors.join('\n'));
-  assert.equal(KEY_MANIFEST.length, 13);
-  assert.equal(new Set(KEY_MANIFEST.map(({ code }) => code)).size, 13);
-  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.ACTIVITY).length, 8);
-  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.COLLECTION).length, 2);
-  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.DESTINATION).length, 1);
+  assert.equal(KEY_MANIFEST.length, 50);
+  assert.equal(new Set(KEY_MANIFEST.map(({ code }) => code)).size, 50);
+  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.ACTIVITY).length, 36);
+  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.COLLECTION).length, 9);
+  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.DESTINATION).length, 2);
   assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.WORLD).length, 1);
-  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.MAINTENANCE).length, 1);
+  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.MAINTENANCE).length, 2);
 
   for (const key of KEY_MANIFEST) {
     assert.match(key.code, /^\d{4}$/);
@@ -192,8 +209,10 @@ test('the curriculum manifest uses a complete shared record contract', () => {
     [...new Set(CURRICULUM_RECORDS.map(({ subject }) => subject))].sort(),
     ['art-and-design', 'english', 'geography', 'mathematics', 'pshe', 'science'],
   );
-  assert.ok(CURRICULUM_RECORDS.find(({ id }) => id === 'math-place-value-four-digit')
-    .objectives.some((objective) => objective.includes('non-standard partitioning')));
+  const mathematics = CURRICULUM_RECORDS.filter(({ subject }) => subject === 'mathematics');
+  assert.equal(mathematics.length, 28);
+  assert.ok(CURRICULUM_RECORDS.find(({ id }) => id === 'math-autumn-1-04')
+    .objectives.some((objective) => objective.includes('non-standard ways')));
   assert.ok(CURRICULUM_RECORDS.find(({ id }) => id === 'geo-locate-africa-gambia')
     .likelyMisconceptions.some((idea) => idea.includes('Africa is one country')));
 });
@@ -254,6 +273,15 @@ test('the visual glossary includes every Atlas term and every future art term', 
     assert.ok(entry.definition);
     assert.ok(entry.visualExample.description);
     assert.ok(entry.contextualExample);
+  }
+});
+
+test('the visual glossary activates the Number Expedition mathematical language', () => {
+  for (const term of REQUIRED_MATHEMATICS_TERMS) {
+    const matches = GLOSSARY.filter((entry) => entry.term === term && entry.domain === 'mathematics');
+    assert.equal(matches.length, 1, `Expected one active mathematics glossary entry for ${term}`);
+    assert.equal(matches[0].active, true);
+    assert.equal(matches[0].activationBuild, 2);
   }
 });
 

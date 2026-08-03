@@ -1,107 +1,215 @@
 # Architecture
 
+## Current product boundary
+
+Build 2 has two active child environments:
+
+- `planet-atlas`
+- `number-expedition`
+
+The remaining eight destination records are future contracts. They stay inactive until their child experience, guided pathways, persistence, accessibility, print, offline assets, and tests are complete.
+
 ## Product invariants
 
-These rules are architectural, not presentational:
+These rules are architectural rather than presentational:
 
-1. Completed curriculum environments are open without a key.
+1. Every completed environment is open without a key.
 2. Keys remember and route to guided pathways; they do not grant ordinary exploration.
 3. Child navigation remains Our Planet, My Keys, My Work, and Enter a Key.
 4. One profile’s keys, work, drafts, responses, and settings never leak into another profile.
-5. One shared artefact schema serves every environment.
-6. Key codes and stable IDs are never reassigned after release.
+5. One shared artefact envelope serves every environment.
+6. Released key codes and stable IDs are never reassigned.
 7. Destination and world wildcards retain future meaning.
 8. Later builds use additive migrations and preserve all prior local data.
-9. Inactive destinations have no child-facing dead controls.
-10. Physical art is documented digitally without being replaced by a drawing app.
+9. Inactive destinations produce no child-facing dead controls.
+10. `8584` is permanently reserved for the Teacher Key Room.
+11. `4829` remains a hidden adult compatibility alias and is never repurposed or advertised.
+12. Adult access is intercepted before learner persistence and lasts only for the current app session.
+13. Teacher favourites are device metadata, never learner data.
+14. Mathematical representations derive from semantic values, not independent screen copies.
+15. Physical art is documented digitally without being replaced by a drawing app.
 
 ## Application startup
 
 ```mermaid
 flowchart TD
     A[Open application] --> B[Open IndexedDB]
-    B --> C[Load local profiles]
-    C --> D{Active profile?}
-    D -- No --> E[Profile chooser]
-    D -- Yes --> F[Load settings]
-    F --> G[Resolve stored wildcard grants]
-    G --> H[Load My Keys, My Work and Planet responses]
-    H --> I[Render requested route]
-    I --> J[Register offline worker]
+    B --> C[Load or choose profile]
+    C --> D[Load settings and metadata]
+    D --> E[Resolve wildcard grants]
+    E --> F[Load My Keys and My Work]
+    F --> G[Render route and register worker]
 ```
 
-If IndexedDB fails to open, the same service API switches to in-memory storage for that page session. The UI remains operable and can communicate that durable saving is unavailable.
+If IndexedDB cannot open, the service API switches to in-memory storage for that page session. The UI remains operable and exposes that saving is not durable.
 
 ## Route model
 
 Hash routes keep GitHub Pages hosting simple and offline-safe.
 
-| Route | Purpose | Key required? |
-|---|---|---:|
-| `#/home` | Open world | No |
-| `#/atlas` | Planet Atlas exploration | No |
-| `#/keys` | Remembered guided pathways | Profile only |
-| `#/work` | Unified child workspace | Profile only |
-| `#/work/:id` | Saved artefact | Profile only |
-| `#/key` | Four-digit entry | Profile only |
-| `#/activity/:id` | Exact Key Activity | Matching remembered grant |
-| `#/settings` | Learner accessibility settings | Profile only |
-| `#/maintenance` | Adult utility | Maintenance session |
-| `#/print/key-guide` | Manifest-generated teacher guide | Maintenance session |
+| Route | Purpose | Access |
+|---|---|---|
+| `#/home` | Open world and Today’s Key | Profile |
+| `#/atlas` | Open Planet Atlas | Profile; no key |
+| `#/numbers` | Number Expedition regions | Profile; no key |
+| `#/number-tool/:id` | One open mathematical instrument | Profile; no key |
+| `#/keys` | Remembered guided pathways | Profile |
+| `#/collection/:keyId` | One coherent key collection overview | Profile; collection activities are remembered on key entry |
+| `#/work` | Unified child workspace | Profile |
+| `#/work/:id` | Saved artefact | Owning profile |
+| `#/key` | Four-digit entry | Profile |
+| `#/activity/:id` | Exact guided pathway | Matching remembered grant |
+| `#/settings` | Learner accessibility settings | Profile |
+| `#/maintenance` | Teacher Key Room | Active adult session only |
+| `#/print/key-guide` | Legacy shared Key Guide route | Active adult session only |
 
-The router never produces subject lists, assignment pages, or dead future destinations.
+The route guard sends direct maintenance or guide navigation back to key entry unless both the app unlock flag and the in-memory teacher session are active.
 
 ## Destination registration
 
-`src/data/destinations.js` contains all ten destinations. A destination record contains:
+`src/data/destinations.js` contains all ten destination contracts. Each record contains a stable ID, ordinal, title, route, activation state/build, curriculum domains, and home-world landmark.
 
-- stable ID
-- title and short title
-- order
-- route namespace
-- status
-- activation build
-- icon or landscape role
-- curriculum domains
-- supported capabilities
-
-The home world derives active child destinations from this registry. Changing a destination from inactive to active is an explicit later-build release action.
+The home world derives its child-facing destinations from `getActiveDestinations()`. Build 2 explicitly activates Number Expedition; Build 3 must explicitly activate Living Things Observatory only after its release gate passes.
 
 ## Activity registration
 
-`src/data/activities.js` contains data-only Key Activity contracts. Each activity has:
+`src/data/activities.js` is the combined active activity registry.
 
-- stable ID and route
-- destination
-- enquiry
-- curriculum references
-- concepts and vocabulary
-- Notice / Explore / Make / Explain / Revisit flow
-- response modes
-- accessibility support
+- Planet Atlas contributes eight continuous guided pathways.
+- `src/data/numberExpedition.js` contributes exactly 28 Year 4 Autumn 1 pathways.
+
+Every Number Expedition activity supplies:
+
+- stable ID, order, route, region, and open-tool ID
+- permanent four-digit code
+- child title and invitation
+- curriculum objective and tags
+- concept and vocabulary tags
+- Notice / Explore / Make / Explain / Revisit content
 - optional unscored Key Check
-- shared artefact outcome
+- misconception metadata
+- per-scaffold behaviour
+- semantic My Work outcome and print metadata
 
-Activity UI is rendered by `activityExperience.js`. The five conceptual moments are grouped into three child-facing stages, and `workflowVersion` safely maps unfinished legacy drafts into that reduced flow. Persistence and permissions do not depend on the visual layout.
+Lesson numbering may exist in curriculum metadata, but it is not the child-facing organisation.
 
-## Key architecture
+## Number Expedition manifest
 
-`src/data/keys.js` is authoritative. UI code never embeds released codes.
+`src/data/numberExpedition.js` is the destination-level source for:
 
-### Resolution
+- seven region records
+- 17 open-tool records
+- 28 activity records
+- seven collection records
+- the Number Expedition Environment key record
+- manifest validation
+
+The seven regions are `number-base-camp`, `magnitude-trail`, `rounding-ridge`, `beyond-zero-station`, `addition-workshop`, `subtraction-workshop`, and `reasoning-observatory`.
+
+An activity selects a reusable open tool through `toolId`; it does not implement a second incompatible mathematical engine. Guided activity metadata changes the starting values, invitation, scaffold cue, Key Check, and outcome identity while preserving the same instrument.
+
+## Shared mathematics engine
+
+The pure domain layer lives in `src/maths/`. It can be tested without a browser or learner database.
 
 ```mermaid
 flowchart TD
-    A[Four digits] --> B{Manifest match?}
-    B -- No --> C[Calm retry message]
-    B -- Maintenance --> D[Session adult utility]
-    B -- Child key --> E[Store profile grant]
-    E --> F[Resolve against current activity registry]
-    F --> G[Materialise My Keys records]
-    G --> H{Individual?}
-    H -- Yes --> I[Open exact pathway]
-    H -- No --> J[Open My Keys shelf]
+    A[Semantic value or task seed] --> B[Math domain functions]
+    B --> C[Validated linked model]
+    C --> D[Number Expedition renderer]
+    C --> E[My Work and print payload]
 ```
+
+| Module | Responsibility |
+|---|---|
+| `placeValue.js` | Thousands / Hundreds / Tens / Ones, zero placeholders, exchanges, UK number names, linked representations |
+| `partitions.js` | Standard, non-standard, incomplete, different-value, and invalid partition classification |
+| `rounding.js` | Lower/upper multiples, midpoint, distances, direction, and target-unit validation |
+| `romanNumerals.js` | Canonical 1–100 conversion, strict parsing, and repair of non-canonical forms |
+| `operations.js` | Column-aligned addition/subtraction traces and exchange classification |
+| `numberLine.js` | Values, endpoints, intervals, true visual ratios, and placement tolerances |
+| `inverse.js` | Addition/subtraction fact families and missing mathematical roles |
+| `feedback.js` | Structure-specific mathematical feedback |
+| `truthFixtures.js` | Validated always / sometimes / never evidence and witnesses |
+| `random.js` | Functional deterministic random state |
+| `taskGenerator.js` | Seeded task generation and cross-domain validation |
+
+### Linked representation contract
+
+One place-value source creates the numeral, UK number name, digits, source counts, normalised counts, expanded form, place-value chart, counters, and spoken language. A non-canonical source such as ten hundreds preserves the child’s construction while also exposing the equivalent canonical value.
+
+The renderer therefore does not maintain separate mutable values for counters, chart, numeral, and language. A change is applied to one semantic source and all linked views are regenerated.
+
+### Formal operation traces
+
+Addition and subtraction traces operate from ones towards higher places while keeping each exchange attached to a named column. Trace records contain original digits, current counts, incoming/outgoing exchange, result digit, ordered steps, exchange count, and validated result.
+
+Subtraction across zero stores each adjacent exchange in sequence. For `4,002 − 1,786`, the trace moves thousand → hundred → ten → one and records the updated source and target count after each exchange.
+
+### Number-line scale
+
+Every tick stores both a mathematical value and a rendered ratio. Validation rejects a visually equal layout when its labelled values imply a different interval. Placement feedback is calculated in value units rather than pixels.
+
+## Deterministic task generation
+
+`generateNumberTask(mode, seed, options)` is the single generator API for all 28 activities and open-tool modes.
+
+```mermaid
+flowchart TD
+    A[Mode and seed] --> B[Deterministic draws]
+    B --> C[Domain-specific task]
+    C --> D[Domain validator]
+    D --> E[Prompt, values, solution, explanation]
+```
+
+Each result contains a deterministic ID, serialisable seed, generator version, curriculum tags, prompt, semantic values, validated solution, and explanation. Selected exchange categories are generated by checking the completed arithmetic trace, not by assuming the random inputs fit. Rounding, Roman numeral, number-line, partition, inverse, problem, and truth-statement tasks use their own domain validators.
+
+Saving retains the generator seed and version so a later session can explain or reproduce the original task.
+
+## Number Expedition UI state
+
+`src/destinations/number-expedition/NumberExpedition.js` owns one local workspace state per open instrument.
+
+Core state includes:
+
+- schema version, tool ID, mode, and optional activity ID
+- semantic values and representation choices
+- generator seed, generated task ID/version, and challenge number
+- explanation and annotation
+- label and answer visibility
+- Board View step
+
+Open-tool state lives in the current app instance until saved. Guided activity state also uses the shared `activityState` service so unfinished activity work can survive refresh. Undo and redo keep a bounded in-memory history without creating artefact versions for every tap.
+
+## Key architecture
+
+`src/data/keys.js` is the one released key manifest consumed by routing, key access, teacher search, and printing. UI modules never embed their own authoritative code list.
+
+### Build 2 manifest composition
+
+| Type | Count | Source |
+|---|---:|---|
+| Activity | 36 | 8 preserved Atlas + 28 Number Expedition |
+| Collection | 9 | 2 preserved Atlas + 7 Number Expedition |
+| Environment | 2 | Planet Atlas + Number Expedition |
+| Whole World | 1 | Preserved Build 1 wildcard |
+| Adult-only | 2 | `8584` canonical + hidden `4829` alias |
+| **Total** | **50** | Central manifest |
+
+`getProductionTeacherKeys()` returns the 48 active child pathway records and excludes both adult records.
+
+### Resolution order
+
+```mermaid
+flowchart TD
+    A[Fourth digit entered] --> B{8584 or 4829?}
+    B -- Yes --> C[Open in-memory teacher session]
+    B -- No --> D{Active child manifest match?}
+    D -- No --> E[Calm invalid-key response]
+    D -- Yes --> F[Persist profile grant and route]
+```
+
+Teacher resolution happens before `grantKey()`. Neither adult code can create a `keyGrant`, `keyAccess`, visit, activity state, or My Work record.
 
 ### Permission forms
 
@@ -109,138 +217,146 @@ flowchart TD
 - `destination:<id>:*` — all present and future activities in one destination
 - `world:*` — all present and future activities across the product
 
-The stored grant is the long-term source of truth. Materialised access records add display information, visit dates, and linked artefacts for the current registry.
+The stored wildcard grant is the long-term permission source. `syncGrantedActivities(profileId, currentRegistry)` materialises matching active activities into My Keys without rewriting the wildcard.
 
-### Future wildcard preservation
+### Permanent adult codes
 
-Later builds call `syncGrantedActivities(profileId, currentRegistry)`. Any activity matching an older wildcard is added to My Keys. The older grant is not rewritten, so Build 1 whole-world access continues to mean “every current and future pathway.”
+`src/teacher/teacherKeyManifest.js` defines the cross-record adult invariants used in addition to the central key validator:
 
-## IndexedDB schema
+- `8584` / `key-teacher-key-room` is the canonical, public Teacher Key Room entrance.
+- `4829` / `key-maintenance-adult-utility` remains active only as a hidden Build 1 compatibility alias.
+- both have adult capabilities only and no child activity grant
+- neither may appear in the production teacher library
+- no third active adult entrance is allowed
+- collisions, missing aliases, altered stable IDs, malformed wildcards, inactive production entries, and child grants on adult records fail validation
+
+## Teacher Key Room
+
+The teacher subsystem is separated into small modules:
+
+| Module | Responsibility |
+|---|---|
+| `teacherKeySession.js` | In-memory session, adult-code interception, captured return location |
+| `teacherKeyManifest.js` | Permanent adult constants and cross-manifest validation |
+| `teacherKeyLibrary.js` | Active manifest projection, search, filters, grouping, Quick Keys |
+| `teacherKeyPreferences.js` | Device metadata favourites and title-display preference |
+| `teacherKeyPresentation.js` | Clipboard, full-screen Today’s Key, and print surfaces |
+| `TeacherKeyRoom.js` | Accessible room UI and utility orchestration |
+
+### Session boundary
+
+The session controller is a JavaScript singleton only. It does not use localStorage, sessionStorage, IndexedDB, or a profile. Refresh constructs a new inactive controller. Closing consumes the validated return-location snapshot.
+
+The maintenance route requires both an active session and the controller’s unlock flag. Exiting returns to the captured child route where practical.
+
+### Manifest projection
+
+The library derives searchable entries from active child records. Each entry receives a normalised scale, environment, curriculum subject, strand, purpose, curriculum tags, route, and print metadata. Search examines the code, title, purpose, environment, subject, strand, and tags.
+
+Inactive records and both adult entrances are excluded before rendering. Future active manifest records therefore appear automatically without a separate teacher list.
+
+### Device preferences
+
+Teacher favourites use metadata key `teacher-key-room:device-preferences`, schema version 1. The record contains at most 12 manifest-valid child key IDs plus the show-title-on-board preference. It has no `profileId` and participates in the existing backup/import contract.
+
+### Presentation and print
+
+The full-screen Today’s Key overlay contains a four-digit code, an optional title, and one return control. It requests browser fullscreen when available and remains a fixed viewport overlay if fullscreen is denied. Closing restores focus to the invoking control.
+
+Printable cards and guides are rendered from the same library projection with escaped content and a temporary print-only surface.
+
+## IndexedDB schema and compatibility
 
 Database: `our-planet`, schema version 3.
 
 | Store | Key | Role |
 |---|---|---|
-| `profiles` | profile ID | local learner identity and accessibility snapshot |
-| `keyGrants` | profile + stable key | permanent permission contract |
-| `keyAccess` | profile + activity | materialised My Keys shelf and visits |
-| `artefacts` | artefact ID | current saved creation |
-| `artefactVersions` | artefact + version | immutable version snapshots |
-| `planetResponses` | response ID | append-only central enquiry history |
-| `activityState` | profile + activity | unfinished guided work |
-| `metadata` | metadata key | active profile, settings, migrations and recovery |
+| `profiles` | profile ID | Local learner identity and accessibility snapshot |
+| `keyGrants` | profile + stable key | Permanent permission contract |
+| `keyAccess` | profile + activity | Materialised My Keys record and visits |
+| `artefacts` | artefact ID | Current saved creation |
+| `artefactVersions` | artefact + version | Immutable version snapshots |
+| `planetResponses` | response ID | Append-only central enquiry history |
+| `activityState` | profile + activity | Unfinished guided work |
+| `metadata` | metadata key | Active profile, settings, teacher preferences, migrations, recovery |
 
-Indexes always include profile identity where learner data is queried.
+Build 2 requires no new store or database-version increment. Number Expedition writes to existing `activityState`, `artefacts`, and `artefactVersions`; teacher preferences write to `metadata`.
 
 ### Migration policy
 
-- Add stores, indexes, or optional fields; do not clear stores.
-- Keep old readers tolerant of missing optional fields.
-- Validate records when read.
+- Add stores, indexes, or optional fields only when genuinely necessary.
+- Never clear or repurpose an existing store.
+- Keep readers tolerant of missing optional fields.
+- Validate records on read and import.
 - Quarantine malformed records with a reason and timestamp.
-- Never repurpose an existing field with a different meaning.
-- Test migrations from every released schema version.
+- Preserve Build 1 backup compatibility.
+- Test migration from every released database version.
 
-## Artefact compatibility
+## Shared artefact compatibility
 
-One artefact record can store a map, model, classification, story, artwork photograph, or explanation because domain content lives in `structuredContent` and identity lives in shared fields.
+The record envelope separates identity from domain content. Core fields identify the owner, destination, activity, optional Key Activity, type, tags, explanations, links, timestamps, and version. `content` holds the semantic domain payload.
 
-Core fields include:
+Number Expedition registers 17 active artefact types. Their content requires `modelState` and may retain original and final values, recent mathematical actions, representations, answer state, estimate, explanation, strategy, generator seed, scaffold, activity, steps, counterexample, and units.
 
-- ID, profile, destination, activity, and optional Key Activity
-- title and artefact type
-- curriculum and concept tags
-- structured content and preview
-- voice and written explanations
-- linked artefacts and reflection
-- created, updated, version, and schema values
+`updateArtefact()` writes the prior and new states to `artefactVersions`. `duplicateArtefact()` creates a separate record linked to the source. Reopening a mathematical artefact restores its tool and `modelState` instead of displaying only a static image.
 
-`updateArtefact` writes the prior and new states to `artefactVersions`. `duplicateArtefact` creates a new current record and links it to the source.
+Planet Question responses remain separate because their append-only comparison timeline is a distinct product behaviour.
 
-Planet Question responses remain separate because their append-only comparison timeline is a distinct product behavior.
+## Board View
+
+Board View is rendered from the same Number Expedition state and model renderer as the learner workspace. It does not create a second calculation or mutate saved work merely by opening.
+
+It exposes previous/next step, label visibility, answer visibility, a short annotation, and one explicit exit. Returning reveals the same workspace state. The fixed surface uses classroom-scale layout and hides normal workspace chrome.
+
+The Teacher Key Room’s full-screen code display is a separate presentation component and does not share learner model state.
 
 ## Planet Atlas engine
 
-`AtlasMap` is a self-contained component with structured state input/output.
+`AtlasMap` remains a self-contained dynamically imported component. It uses `d3-geo`, `topojson-client`, compact `world-atlas` geometry, and a lazily loaded detailed geometry chunk. It owns no learner storage; the app saves its semantic state through the shared artefact service.
 
-It uses:
-
-- `d3-geo` for orthographic and flat projections, paths and distances
-- `topojson-client` to decode country geometry
-- `world-atlas/countries-110m.json` for the compact offline world view, with `countries-50m.json` loaded lazily for close country views
-
-State includes:
-
-- view and projection position
-- zoom and pan
-- labels, equator and ocean visibility
-- tool mode
-- selected place
-- temporary markers
-- two-point journey and narration
-- comparison places
-- geographical question
-
-The engine owns no learner storage. The app saves `getState()` or `createSnapshot()` through the shared artefact service.
-
-The engine is dynamically imported only when Atlas or an Atlas activity opens. The shell and learner workspace therefore load without parsing the full geographic dataset.
+Build 2 must not change Atlas IDs, routes, map-state meaning, geography provenance, or existing artefact contracts.
 
 ## Accessibility separation
 
-Settings are stored per learner and passed into both CSS and interactive components.
+Settings are stored per learner and applied to the document and interactive components. They include scaffold level, text scale, spoken instructions, place-name speech, captions, reduced motion, reduced complexity, high contrast, and sound volume.
 
-The Atlas engine provides:
-
-- keyboard rotation, pan, and zoom
-- focusable SVG
-- visible instructions
-- live announcements
-- marker and journey placement alternatives
-- reduced-motion focus changes
-- forced-colour rules
-
-Activity scaffolding is a content-selection concern; it must not change permission, scoring, or curriculum status.
+Number Expedition uses stable column positions, input labels, large controls, keyboard-operable native inputs, non-drag controls, undo/redo, spoken-number support, and reduced-motion CSS. Scaffold metadata changes prompts and visible support without changing permission, scoring, or the objective.
 
 ## Offline build
 
-Vite outputs content-hashed chunks. `scripts/inject-sw-assets.mjs` scans `dist`, excludes source maps and the worker itself, and injects every deployable file into the worker’s precache list.
+Vite emits content-hashed chunks. `scripts/inject-sw-assets.mjs` scans `dist`, excludes source maps and the worker itself, and injects every deployable file into the worker’s precache list.
 
-This matters because Planet Atlas is lazy loaded: it must still be available offline even if the child installed the app from the home world and has not yet opened the map.
+This includes the dynamically imported Atlas and Number Expedition chunks. A learner can therefore install from the home world and later open either environment offline.
 
-The worker waits rather than replacing an active build mid-session. This prevents an old open page from requesting a lazy chunk that a new cache has already deleted.
-
-Cache cleanup is namespace-scoped to this repository. Activation never deletes unrelated CacheStorage entries belonging to another Pages application on the same origin.
-
-IndexedDB is independent of application caches. Deploying or activating a new worker cannot erase learner data.
+The worker waits rather than replacing an active build mid-session. Cache cleanup is scoped to this repository. IndexedDB is independent of CacheStorage and is not erased by deployment or worker activation.
 
 ## Print architecture
 
-The Key Guide accepts the key manifest as its only code source. `printGuide` metadata on each key drives purpose, useful moments, outcome, group, and card visibility.
+Teacher guides and cards use the active manifest projection as their only code source. My Work and Number Expedition use semantic markup rather than screenshots.
 
-Print CSS:
+Print CSS removes navigation and controls, uses A4 margins and monochrome-safe colours, repeats table headings, protects card and artefact boundaries, preserves digit alignment, and retains SVG number-line geometry.
 
-- removes navigation and interactive controls
-- switches to monochrome-safe ink
-- applies A4 margins
-- preserves card/table boundaries
-- adds explicit guide page breaks
-- avoids clipping and interface chrome
+iPad Safari pagination and clipping remain manual release checks because they cannot be fully established by Node or CSS-contract tests.
 
 ## Tides of Change contracts
 
-Build 1 registers art curriculum, artist metadata, artwork-rights decisions, and physical-art artefact types. `active: false` keeps these contracts out of child UI until Build 10.
+Art curriculum, artist metadata, artwork rights, and physical-art artefact types remain registered and inactive until Build 10. Metadata about an artwork is not permission to reproduce it.
 
-Any artwork reference must carry a rights status before reproduction. Metadata about an artwork is not itself permission to reproduce it.
+## Build 3 extension points
 
-## Adding a later environment
+Living Things Observatory must extend the existing architecture with:
 
-1. Add curriculum records without changing existing IDs.
-2. Add activity records with new stable IDs.
-3. Add permanent non-obvious four-digit codes to the central manifest.
-4. Register new artefact types using the shared contract.
-5. Build the environment as a dynamically loaded module.
-6. Reuse profile, settings, key, artefact, backup, print, and glossary services.
-7. Change the destination status only when the environment is complete.
-8. Run wildcard tests proving earlier whole-world grants receive the new activities.
-9. Run migration tests proving Build 1 data remains intact.
-10. Build and deploy one coherent release. The build script injects a content-derived service-worker cache version automatically.
+- structured organism records and observable features
+- free sorting and regrouping state
+- vertebrate and invertebrate relationships
+- branching classification-key data and validation
+- habitat records and environmental-change scenarios
+- scientific observation, grouping, key, habitat, and explanation artefacts
+- scientific Activity / Collection / Environment keys in the central manifest
+- automatic Teacher Key Room inclusion
+- concept-graph links to habitat, environmental change, geography, number, and evidence
+- a dynamically imported destination UI
+
+It must reuse profiles, settings, key access, artefacts, versions, backup, print, teacher, and offline services. Do not create subject-specific profiles, a science-only work store, a manually maintained teacher code list, or shallow creature quizzes.
+
+The complete Build 3 extension contract is in [Build 3 Handover](BUILD-2-HANDOVER.md).

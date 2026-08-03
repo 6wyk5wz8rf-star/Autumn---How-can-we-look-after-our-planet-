@@ -213,6 +213,47 @@ const geographyEntries = [
   }),
 ];
 
+const mathematicsEntry = ({ id, term, guide, definition, visual, example, related, deeper = null }) => glossaryEntry({
+  id,
+  term,
+  domain: 'mathematics',
+  guide,
+  definition,
+  visual,
+  example,
+  related,
+  deeper,
+  activeInBuild1: true,
+  activationBuild: 2,
+});
+
+const mathematicsEntries = [
+  mathematicsEntry({ id: 'digit', term: 'digit', guide: 'DIJ-it', definition: 'One of the symbols 0 to 9 used to write numbers.', visual: 'The digit 5 shown in different place-value columns with a different value each time.', example: 'In 5,203, the digit 5 has a value of five thousand.', related: ['place-value', 'value'] }),
+  mathematicsEntry({ id: 'value', term: 'value', guide: 'VAL-yoo', definition: 'How much a number, digit or expression represents.', visual: 'A digit, counters and an expanded part joined because they have the same value.', example: 'Ten hundreds and one thousand have the same value.', related: ['digit', 'place-value', 'equivalence'] }),
+  mathematicsEntry({ id: 'place-value', term: 'place value', guide: 'PLAYS VAL-yoo', definition: 'The value of a digit because of its position in a number.', visual: 'Thousands, hundreds, tens and ones columns aligned from left to right.', example: 'The zero in 4,052 keeps the hundreds place visible.', related: ['digit', 'value', 'partition'] }),
+  mathematicsEntry({ id: 'thousand', term: 'thousand', guide: 'THOW-zund', definition: 'A quantity equal to ten hundreds or 1,000 ones.', visual: 'Ten hundred flats grouped into one thousand crate.', example: 'Ten hundreds can be exchanged for one thousand without changing the value.', related: ['place-value', 'exchange', 'equivalence'] }),
+  mathematicsEntry({ id: 'partition', term: 'partition', guide: 'par-TISH-un', definition: 'To split a number into parts whose values still make the whole.', visual: '4,362 connected to 4,000 + 300 + 60 + 2 and to a different equivalent partition.', example: '4,362 can be partitioned as 3,000 + 1,300 + 50 + 12.', related: ['place-value', 'equivalence', 'sum'] }),
+  mathematicsEntry({ id: 'exchange', term: 'exchange', guide: 'eks-CHAYNJ', definition: 'To regroup an amount into an equivalent number of smaller or larger place-value units.', visual: 'Ten tens replaced by one hundred while the total remains unchanged.', example: 'In subtraction, one hundred can be exchanged for ten tens.', related: ['place-value', 'equivalence', 'partition'], deeper: 'Exchange changes the representation, not the value.' }),
+  mathematicsEntry({ id: 'equivalence', term: 'equivalent', guide: 'ee-KWIV-uh-lunt', definition: 'Having the same value even when written or represented differently.', visual: 'Two different place-value models balanced at the same height.', example: '43 hundreds + 6 tens + 2 ones is equivalent to 4,362.', related: ['value', 'exchange', 'partition'] }),
+  mathematicsEntry({ id: 'magnitude', term: 'magnitude', guide: 'MAG-nih-tyood', definition: 'The size of a number or quantity.', visual: 'Two numbers positioned on one accurately scaled line.', example: 'Compare thousands first because that place may decide the greater magnitude.', related: ['comparison', 'number-line', 'place-value'] }),
+  mathematicsEntry({ id: 'comparison', term: 'compare', guide: 'kum-PAIR', definition: 'To examine values to decide whether one is greater, less or equal.', visual: 'Two place-value charts beside the symbols less than, greater than and equal to.', example: 'Both numbers have 6 thousands, so the hundreds column decides the comparison.', related: ['magnitude', 'place-value', 'difference'] }),
+  mathematicsEntry({ id: 'number-line', term: 'number line', guide: 'NUM-buh LINE', definition: 'A line on which positions represent numbers using a consistent scale.', visual: 'A labelled interval with a midpoint and one estimated point.', example: 'A point halfway from 4,000 to 5,000 represents 4,500.', related: ['interval', 'magnitude', 'estimate'] }),
+  mathematicsEntry({ id: 'interval', term: 'interval', guide: 'IN-tuh-vul', definition: 'The numerical distance between two values or marks.', visual: 'Two neighbouring ticks joined and labelled with their difference.', example: 'If each interval is 100, five intervals represent 500.', related: ['number-line', 'difference', 'scale-mathematics'] }),
+  mathematicsEntry({ id: 'estimate', term: 'estimate', guide: 'ES-tih-mayt', definition: 'A sensible approximate value based on mathematical evidence.', visual: 'An exact position and a nearby rounded position compared on a line.', example: 'Rounding both addends gives an estimate near 6,000.', related: ['rounding', 'magnitude', 'reasonableness'] }),
+  mathematicsEntry({ id: 'rounding', term: 'round', guide: 'ROWND', definition: 'To replace a value with the nearest chosen multiple.', visual: 'A number placed between a lower multiple, midpoint and upper multiple.', example: '4,349 rounds to 4,300 to the nearest hundred because it is before the midpoint.', related: ['estimate', 'number-line', 'nearest'] }),
+  mathematicsEntry({ id: 'nearest', term: 'nearest', guide: 'NEER-ist', definition: 'Having the smallest numerical distance from a value.', visual: 'Two distances from one point compared with labelled spans.', example: 'At the midpoint, the nearest ten is the higher multiple by convention.', related: ['rounding', 'difference', 'number-line'] }),
+  mathematicsEntry({ id: 'negative-numbers', term: 'negative number', guide: 'NEG-uh-tiv NUM-buh', definition: 'A number less than zero.', visual: 'A vertical line crossing zero with values above and below.', example: '−4 is less than −1, even though 4 is the larger digit.', related: ['temperature', 'number-line', 'difference'] }),
+  mathematicsEntry({ id: 'roman-numeral', term: 'Roman numeral', guide: 'ROH-mun NYOO-muh-rul', definition: 'A number representation built from symbols such as I, V, X, L and C.', visual: 'The value 49 connected to the canonical form XLIX.', example: 'XL means 40 because X placed before L subtracts ten.', related: ['representation', 'value'] }),
+  mathematicsEntry({ id: 'sum', term: 'sum', guide: 'SUM', definition: 'The result of adding two or more values.', visual: 'Two addends combining into one aligned total.', example: 'The sum of 3,482 and 2,156 is 5,638.', related: ['total', 'addition', 'inverse'] }),
+  mathematicsEntry({ id: 'total', term: 'total', guide: 'TOH-tul', definition: 'The complete amount after quantities have been combined.', visual: 'Several parts connected to one whole bar.', example: 'Four-digit addends can produce a five-digit total.', related: ['sum', 'addition', 'part-whole'] }),
+  mathematicsEntry({ id: 'difference', term: 'difference', guide: 'DIF-ruhns', definition: 'The numerical distance between two values.', visual: 'Two positions joined on a line with the gap highlighted.', example: 'Counting on can efficiently find the difference between 4,998 and 5,002.', related: ['subtraction', 'interval', 'comparison'] }),
+  mathematicsEntry({ id: 'inverse', term: 'inverse', guide: 'IN-vurs', definition: 'An operation that reverses the effect of another operation.', visual: 'An addition equation connected to its two related subtraction equations.', example: 'Subtraction can check an addition because the operations are inverse.', related: ['addition', 'subtraction', 'equation-family'] }),
+  mathematicsEntry({ id: 'efficient', term: 'efficient', guide: 'ih-FISH-unt', definition: 'Reaching a correct result with a method well suited to the numbers.', visual: 'A short counting-on route beside a longer column calculation.', example: 'Counting on is efficient for 5,002 − 4,998.', related: ['strategy', 'difference', 'reasonableness'] }),
+  mathematicsEntry({ id: 'strategy', term: 'strategy', guide: 'STRAT-uh-jee', definition: 'A chosen mathematical method or plan.', visual: 'Mental, number-line and column methods pointing to one calculation.', example: 'Inspect the numbers before choosing a subtraction strategy.', related: ['efficient', 'operation-plan', 'reasonableness'] }),
+  mathematicsEntry({ id: 'counterexample', term: 'counterexample', guide: 'KOWN-tuh-rig-ZAM-pul', definition: 'An example that proves a general statement is not always true.', visual: 'One test case breaking an “always” statement.', example: 'A single counterexample is enough to disprove an always statement.', related: ['proof', 'evidence', 'statement'] }),
+  mathematicsEntry({ id: 'proof', term: 'proof', guide: 'PROOF', definition: 'A complete mathematical reason showing why a statement must be true.', visual: 'A general structure linked to every allowed case, not only one example.', example: 'Several examples may support an idea, but a proof explains why it always works.', related: ['evidence', 'counterexample', 'statement'] }),
+];
+
 const artEntries = [
   glossaryEntry({ id: 'artist', term: 'artist', domain: 'art', guide: 'AR-tist', definition: 'A person who develops and communicates ideas through creative choices.', visual: 'A hand, eye, materials and idea connected around a work in progress.', example: 'An artist experiments, notices effects and decides what serves the idea.', related: ['artist-influence', 'artist-statement'] }),
   glossaryEntry({ id: 'artwork', term: 'artwork', domain: 'art', guide: 'ART-wurk', definition: 'A work created through artistic ideas, materials and choices.', visual: 'A physical work beside notes showing choices and influences.', example: 'The final artwork combines a natural force with signs of human impact.', related: ['artist', 'media', 'composition'] }),
@@ -236,7 +277,7 @@ const artEntries = [
   glossaryEntry({ id: 'artist-statement', term: 'artist statement', domain: 'art', guide: 'AR-tist STAYT-ment', definition: 'A short explanation of what inspired an artwork, what it shows and its message.', visual: 'Three linked prompts: inspired by, shows, message.', example: 'My work is inspired by ____. It shows ____. My message is ____.', related: ['artist', 'artist-influence', 'artwork'] }),
 ];
 
-export const GLOSSARY = Object.freeze([...geographyEntries, ...artEntries]);
+export const GLOSSARY = Object.freeze([...geographyEntries, ...mathematicsEntries, ...artEntries]);
 
 export const REQUIRED_ATLAS_TERMS = Object.freeze([
   'Earth', 'planet', 'globe', 'map', 'atlas', 'continent', 'country', 'region', 'ocean',
@@ -248,6 +289,13 @@ export const REQUIRED_ART_TERMS = Object.freeze([
   'artist', 'artwork', 'media', 'charcoal', 'pastel', 'collage', 'mixed media', 'wash',
   'texture', 'contrast', 'movement', 'composition', 'juxtaposition', 'scale', 'pattern',
   'rhythm', 'gradient', 'mood', 'influence', 'artist statement',
+]);
+
+export const REQUIRED_MATHEMATICS_TERMS = Object.freeze([
+  'digit', 'value', 'place value', 'thousand', 'partition', 'exchange', 'equivalent',
+  'magnitude', 'compare', 'number line', 'interval', 'estimate', 'round', 'nearest',
+  'negative number', 'Roman numeral', 'sum', 'total', 'difference', 'inverse',
+  'efficient', 'strategy', 'counterexample', 'proof',
 ]);
 
 export function getGlossaryEntryById(id, entries = GLOSSARY) {
