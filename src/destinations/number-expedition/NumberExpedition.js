@@ -750,7 +750,7 @@ export class NumberExpedition {
     this.host.ownerDocument.documentElement.classList.toggle('board-view-open', Boolean(board));
     if (board) {
       this.host.querySelectorAll('.number-workspace > :not(.board-view)').forEach((element) => element.setAttribute('inert', ''));
-      board.querySelectorAll('main input, main textarea, main select, main button').forEach((control) => { control.disabled = true; });
+      board.querySelector(':scope > main')?.querySelectorAll('input, textarea, select, button').forEach((control) => { control.disabled = true; });
     }
   }
 

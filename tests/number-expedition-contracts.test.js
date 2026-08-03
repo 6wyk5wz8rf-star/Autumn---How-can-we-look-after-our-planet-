@@ -185,6 +185,9 @@ test('Board View contains a model and controls but no learner identity or save s
   assert.equal(board.getAttribute('aria-modal'), 'true');
   assert.ok(board.querySelector('.column-calculation'));
   assert.ok(board.querySelector('[data-number-action="close-board"]'));
+  assert.equal(board.querySelector('[data-number-action="close-board"]').disabled, false);
+  assert.equal(board.querySelector('[data-number-action="board-previous"]').disabled, false);
+  assert.equal(board.querySelector('[data-number-action="board-next"]').disabled, false);
   assert.equal(board.querySelector('[data-number-action="save"]'), null);
   assert.equal(board.querySelector('[data-route]'), null);
   assert.equal(board.querySelector('.profile-pill, .profile-name, [data-profile-id], [data-learner-id]'), null);
