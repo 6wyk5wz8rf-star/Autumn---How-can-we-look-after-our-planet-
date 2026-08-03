@@ -161,6 +161,31 @@ test('saved mathematical work retains its original values and recent learner act
   dom.window.close();
 });
 
+test('saving captures a focused mathematical explanation before its change event', async () => {
+  const dom = installDom();
+  let payload = null;
+  const workspace = new NumberExpedition(document.querySelector('#app'), {
+    toolId: 'build-number',
+    onSave: async (nextPayload) => { payload = nextPayload; },
+  });
+  const explanation = document.querySelector('[data-number-text="explanation"]');
+  explanation.value = 'The zero keeps the hundreds place visible.';
+  explanation.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+
+  await workspace.save();
+
+  assert.equal(payload.writtenExplanation, 'The zero keeps the hundreds place visible.');
+  assert.equal(
+    payload.structuredContent.modelState.explanation,
+    'The zero keeps the hundreds place visible.',
+  );
+  assert.ok(payload.structuredContent.childActions.some(({ action, field }) => (
+    action === 'change-written-response' && field === 'explanation'
+  )));
+  workspace.destroy();
+  dom.window.close();
+});
+
 test('Roman feedback, spoken maths, reasoning controls and Board keyboard behaviour are specific', () => {
   const dom = installDom();
   const host = document.querySelector('#app');

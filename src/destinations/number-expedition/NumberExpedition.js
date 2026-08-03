@@ -485,6 +485,54 @@ export class NumberExpedition {
 
   snapshot() { return this.state ? clone(this.state) : null; }
 
+  syncPendingControls() {
+    if (!this.state) return;
+
+    this.host.querySelectorAll('[data-number-text]').forEach((control) => {
+      if (control.closest('.board-view')) return;
+      const field = control.dataset.numberText;
+      if (!field || this.state[field] === control.value) return;
+      this.state[field] = control.value;
+      this.recordAction('change-written-response', { field });
+    });
+
+    this.host.querySelectorAll('[data-number-field]').forEach((control) => {
+      if (control.closest('.board-view')) return;
+      const field = control.dataset.numberField;
+      if (!field) return;
+      const minimumAttribute = control.getAttribute('min');
+      const maximumAttribute = control.getAttribute('max');
+      const minimum = minimumAttribute == null ? -9999 : Number(minimumAttribute);
+      const maximum = maximumAttribute == null ? 9999 : Number(maximumAttribute);
+      const value = clamp(integer(control.value), minimum, maximum);
+      if (this.state[field] === value) return;
+      this.state[field] = value;
+      this.recordAction('change-value', { field });
+      if (field === 'value') {
+        this.state.sourceCounts = null;
+        this.state.partitionTerms = createLinkedRepresentations(value).allPlaceTerms;
+        if (this.tool.mode === 'rounding') this.state.roundingChoice = null;
+      }
+    });
+
+    this.host.querySelectorAll('[data-number-array]').forEach((control) => {
+      if (control.closest('.board-view')) return;
+      const field = control.dataset.numberArray;
+      const index = integer(control.dataset.index);
+      if (!field || index < 0) return;
+      const minimumAttribute = control.getAttribute('min');
+      const maximumAttribute = control.getAttribute('max');
+      const minimum = minimumAttribute == null ? 0 : Number(minimumAttribute);
+      const maximum = maximumAttribute == null ? 9999 : Number(maximumAttribute);
+      const value = clamp(integer(control.value), minimum, maximum);
+      const current = [...(this.state[field] || [])];
+      if (current[index] === value) return;
+      current[index] = value;
+      this.state[field] = current;
+      this.recordAction('change-ordered-value', { index });
+    });
+  }
+
   recordAction(action, detail = {}) {
     if (!this.state || !action) return;
     const actions = Array.isArray(this.state.childActions) ? this.state.childActions : [];
@@ -710,6 +758,10 @@ export class NumberExpedition {
 
   async save() {
     if (!this.onSave) return;
+    // A learner may press Save while a text or number control still has focus.
+    // Safari does not guarantee that its deferred change event runs before the
+    // click handler, so read the visible controls at this persistence boundary.
+    this.syncPendingControls();
     const payload = {
       destinationId: 'number-expedition',
       activityId: this.activity?.id || `open-number-${this.tool.id}`,
