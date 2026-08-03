@@ -10,6 +10,8 @@ import {
   traceAddition,
   traceSubtraction,
 } from '../maths/index.js';
+import { getOrganism } from '../data/organisms.js';
+import { renderOrganismIllustration } from '../science/illustrations.js';
 
 const artefactSymbols = {
   'exploration-snapshot': '◎',
@@ -38,6 +40,25 @@ const artefactSymbols = {
   proof: '∴',
   counterexample: '≠',
   'child-created-challenge': '✎',
+  'organism-observation': '◉',
+  'organism-comparison': '⇄',
+  'free-sorting-board': '∩',
+  'tested-grouping-rule': '✓',
+  'backbone-classification': '⌇',
+  'vertebrate-group-comparison': '⌇',
+  'invertebrate-diversity-panel': '✣',
+  'classification-key-route': '⑂',
+  'classification-question-analysis': '?',
+  'branching-classification-key': '⑂',
+  'repaired-key': '↻',
+  'mystery-organism-trail': '◌',
+  'habitat-needs-map': '▧',
+  'microhabitat-observation': '⌕',
+  'habitat-model': '▧',
+  'environmental-change-chain': '⇢',
+  'environmental-response-comparison': '⇄',
+  'survey-record': '≋',
+  'child-created-science-challenge': '✎',
 };
 
 const NUMBER_ARTEFACT_TYPES = new Set([
@@ -46,6 +67,16 @@ const NUMBER_ARTEFACT_TYPES = new Set([
   'negative-number-route', 'roman-numeral', 'addition-model', 'subtraction-model',
   'strategy-comparison', 'inverse-family', 'problem-model', 'proof', 'counterexample',
   'child-created-challenge',
+]);
+
+const SCIENCE_ARTEFACT_TYPES = new Set([
+  'organism-observation', 'organism-comparison', 'free-sorting-board', 'grouping-rule',
+  'tested-grouping-rule', 'backbone-classification', 'vertebrate-group-comparison',
+  'invertebrate-diversity-panel', 'classification-key-route', 'classification-question-analysis',
+  'branching-classification-key', 'repaired-key', 'mystery-organism-trail',
+  'habitat-needs-map', 'microhabitat-observation', 'habitat-model',
+  'environmental-change-chain', 'environmental-response-comparison', 'survey-record',
+  'child-created-science-challenge',
 ]);
 
 const outcomeTemplatesWithExplanation = new Set([
@@ -72,6 +103,11 @@ function renderSavedPreview(artifact, type) {
     const state = artifact.content?.modelState || artifact.structuredContent?.modelState || {};
     const values = [state.value, state.left, state.right, state.target].filter((value) => Number.isFinite(Number(value))).slice(0, 3);
     return `<span class="work-preview-symbol maths-symbol" aria-hidden="true">${artefactSymbols[type] || '◇'}</span>${values.length ? `<strong class="maths-preview-values">${values.map((value) => Number(value).toLocaleString('en-GB')).join(' · ')}</strong>` : `<strong>${escapeHTML(artifact.preview?.label || humanise(type))}</strong>`}`;
+  }
+  if (SCIENCE_ARTEFACT_TYPES.has(type)) {
+    const organismIds = artifact.content?.organismIds || artifact.structuredContent?.organismIds || artifact.preview?.organismIds || [];
+    const organisms = organismIds.map(getOrganism).filter(Boolean).slice(0, 3);
+    return `<span class="work-preview-symbol science-symbol" aria-hidden="true">${artefactSymbols[type] || '◉'}</span>${organisms.length ? `<span class="science-preview-names">${organisms.map((organism) => escapeHTML(organism.commonName)).join(' · ')}</span>` : `<strong>${escapeHTML(artifact.preview?.label || humanise(type))}</strong>`}`;
   }
   return `<span class="work-preview-symbol" aria-hidden="true">${artefactSymbols[type] || '▱'}</span>${artifact.preview?.label ? `<strong>${escapeHTML(artifact.preview.label)}</strong>` : ''}`;
 }
@@ -157,7 +193,50 @@ function renderMathsOutcome(type, content) {
   return `<section class="saved-outcome-template maths-outcome" data-maths-print><div class="maths-outcome-mark" aria-hidden="true">${artefactSymbols[type] || '◇'}</div><div><h2>${escapeHTML(humanise(type))}</h2>${model}<dl>${explanation}</dl></div></section>`;
 }
 
+function renderSavedScienceTree(node, depth = 0) {
+  if (!node || depth > 12) return '<span>Incomplete branch</span>';
+  if (node.type === 'result') {
+    const organism = getOrganism(node.organismId);
+    return `<span class="saved-science-result">${escapeHTML(organism?.commonName || 'Unresolved organisms')}</span>`;
+  }
+  return `<div class="saved-science-branch"><strong>${escapeHTML(node.label || node.questionId || 'Question')}</strong><div><span>Yes</span>${renderSavedScienceTree(node.yes, depth + 1)}</div><div><span>No</span>${renderSavedScienceTree(node.no, depth + 1)}</div></div>`;
+}
+
+function renderScienceOutcome(type, content) {
+  const state = content.scienceState || {};
+  const organisms = (content.organismIds || state.organismIds || []).map(getOrganism).filter(Boolean).slice(0, 12);
+  const specimens = organisms.length
+    ? `<div class="saved-specimen-grid">${organisms.map((organism) => renderOrganismIllustration(organism, { compact: true })).join('')}</div>`
+    : '<p class="muted">Reopen this record to inspect its organism set.</p>';
+  let model = specimens;
+  if (content.groupMemberships?.length) {
+    model += `<div class="saved-science-groups">${content.groupMemberships.map((group) => `<section><h3>${escapeHTML(group.title || 'Group')}</h3><p>${(group.organismIds || []).map((id) => escapeHTML(getOrganism(id)?.commonName || id)).join(' · ') || 'No organisms placed'}</p></section>`).join('')}</div>`;
+  }
+  if (content.branchLogic) model += `<div class="saved-science-tree" aria-label="Saved branching classification key">${renderSavedScienceTree(content.branchLogic)}</div>`;
+  if (content.questionHistory?.length) {
+    model += `<ol class="saved-question-history">${content.questionHistory.map((item) => `<li><strong>${escapeHTML(item.label || item.questionId)}</strong> <span>${item.answer === true ? 'Yes' : item.answer === false ? 'No' : ''}</span></li>`).join('')}</ol>`;
+  }
+  const habitat = content.habitatData || {};
+  const change = content.changeScenario || {};
+  const surveyRows = content.surveyRows || [];
+  return `<section class="saved-outcome-template science-outcome" data-science-print>
+    <div class="science-outcome-mark" aria-hidden="true">${artefactSymbols[type] || '◉'}</div>
+    <div><h2>${escapeHTML(humanise(type))}</h2>${model}<dl>
+      ${outcomeField('Grouping rule', content.groupingRule)}
+      ${outcomeField('Habitat', habitat.habitatId)}
+      ${outcomeField('Microhabitat', habitat.microhabitatId)}
+      ${outcomeField('We observed', change.evidence)}
+      ${outcomeField('We know', change.known)}
+      ${outcomeField('We predict', change.prediction)}
+      ${outcomeField('We are unsure', change.uncertain)}
+      ${surveyRows.length ? outcomeField('Survey records', surveyRows.map((row) => `${getOrganism(row.organismId)?.commonName || row.organismId}: ${row.count ?? row.tally ?? 0}`)) : ''}
+      ${outcomeField('Generator seed', content.generatorSeed)}
+    </dl></div>
+  </section>`;
+}
+
 function renderOutcomeTemplate(type, content) {
+  if (SCIENCE_ARTEFACT_TYPES.has(type)) return renderScienceOutcome(type, content);
   if (NUMBER_ARTEFACT_TYPES.has(type)) {
     return renderMathsOutcome(type, content);
   }
@@ -215,7 +294,7 @@ export function renderHomeView({ profile, recentActivity, workCount = 0 }) {
       <div class="world-intro">
         <p class="eyebrow">${greeting}</p>
         <h1 id="home-title">How can we look after our planet?</h1>
-        <p class="lede">Begin with a place. Look closely. Follow what you notice.</p>
+        <p class="lede">Begin anywhere. Look closely. Follow what the evidence reveals.</p>
       </div>
       <aside class="home-key-station no-print" aria-labelledby="home-key-title"><p class="eyebrow">One direct path</p><h2 id="home-key-title">Today’s Key</h2>${renderKeypad()}</aside>
       <button class="atlas-landmark" type="button" data-route="atlas" aria-label="Open Planet Atlas">
@@ -223,6 +302,7 @@ export function renderHomeView({ profile, recentActivity, workCount = 0 }) {
         <span class="atlas-label"><strong>Planet Atlas</strong><span>Globe · map · places · journeys</span></span>
       </button>
       <button class="number-landmark" type="button" data-route="numbers" aria-label="Open Number Expedition"><span class="number-cairn" aria-hidden="true"><i>1</i><i>10</i><i>100</i><i>1,000</i></span><span class="atlas-label"><strong>Number Expedition</strong><span>Build · move · compare · prove</span></span></button>
+      <button class="science-landmark" type="button" data-route="living-things" aria-label="Open Living Things Observatory"><span class="science-lens" aria-hidden="true"><i></i><b></b><em></em></span><span class="atlas-label"><strong>Living Things Observatory</strong><span>Observe · group · classify · connect</span></span></button>
     </div>
     ${recentActivity ? `<aside class="paper-panel panel-pad" style="margin-top:1rem" aria-label="Continue a recent pathway">
       <div class="spread">
@@ -231,6 +311,10 @@ export function renderHomeView({ profile, recentActivity, workCount = 0 }) {
       </div>
     </aside>` : ''}
   </section>`;
+}
+
+export function renderLivingThingsHost({ toolId = null, activityId = null } = {}) {
+  return `<div id="living-things-observatory" data-science-tool-id="${escapeAttr(toolId || '')}" data-science-activity-id="${escapeAttr(activityId || '')}"></div>`;
 }
 
 export function renderAtlasView() {
@@ -264,7 +348,7 @@ export function renderKeysView({ activities = [], access = [], artifacts = [] })
       <button class="button" type="button" data-route="key">Enter a Key</button>
     </div>
     ${opened.length ? `<div class="key-environments">
-      ${[['planet-atlas', 'Planet Atlas'], ['number-expedition', 'Number Expedition']].map(([destinationId, destinationTitle]) => {
+      ${[['planet-atlas', 'Planet Atlas'], ['number-expedition', 'Number Expedition'], ['living-things-observatory', 'Living Things Observatory']].map(([destinationId, destinationTitle]) => {
         const destinationActivities = opened.filter((activity) => activity.destinationId === destinationId);
         if (!destinationActivities.length) return '';
         return `<section class="key-environment"><div class="spread"><div><p class="eyebrow">Open pathways</p><h2>${destinationTitle}</h2></div><span class="small muted">${destinationActivities.length} ${destinationActivities.length === 1 ? 'pathway' : 'pathways'}</span></div><div class="key-path-list">${destinationActivities.map((activity) => {
@@ -322,6 +406,7 @@ export function renderWorkView({ artifacts = [], responses = [], activeFilter = 
     ['all', 'All work'],
     ['planet-atlas', 'Atlas'],
     ['number-expedition', 'Numbers'],
+    ['living-things-observatory', 'Living Things'],
     ['explanation', 'Explanations'],
   ];
   const showFilters = artifacts.length >= 6;
@@ -366,7 +451,7 @@ export function renderWorkView({ artifacts = [], responses = [], activeFilter = 
     </div>
     ${visible.length ? `<div class="work-shelf">
       ${visible.map(renderArtifactCard).join('')}
-    </div>` : `<div class="empty-state"><div><div class="display-type" style="font-size:3rem;color:var(--moss)" aria-hidden="true">▱</div><h2>${artifacts.length ? 'No work in this view yet' : 'Your work will gather here'}</h2><p class="muted">Save a map view, mathematical model or guided pathway. You can always return to the original.</p><div class="cluster" style="justify-content:center"><button class="button" type="button" data-route="atlas">Explore the atlas</button><button class="button secondary" type="button" data-route="numbers">Explore numbers</button></div></div></div>`}
+    </div>` : `<div class="empty-state"><div><div class="display-type" style="font-size:3rem;color:var(--moss)" aria-hidden="true">▱</div><h2>${artifacts.length ? 'No work in this view yet' : 'Your work will gather here'}</h2><p class="muted">Save a map view, mathematical model, scientific record or guided pathway. You can always return to the original.</p><div class="cluster" style="justify-content:center"><button class="button" type="button" data-route="atlas">Explore the atlas</button><button class="button secondary" type="button" data-route="numbers">Explore numbers</button><button class="button secondary" type="button" data-route="living-things">Explore living things</button></div></div></div>`}
   </section>`;
 }
 

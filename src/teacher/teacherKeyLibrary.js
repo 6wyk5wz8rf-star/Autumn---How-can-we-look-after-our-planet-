@@ -121,6 +121,10 @@ export function createTeacherKeyLibrary(manifest = [], { destinations = [] } = {
       teacherQuickUse: key.teacherQuickUse === true,
       quickUse: key.teacherQuickUse === true || key.printGuide?.quickUse === true,
       printInfo: Object.freeze({ ...(key.printGuide ?? key.print ?? {}) }),
+      savedOutcome: String(key.savedOutcomeType ?? key.printGuide?.expectedOutcome ?? '').trim(),
+      usefulMoments: Object.freeze([...(key.printGuide?.usefulMoments ?? [])]),
+      boardViewSuitable: key.boardViewSuitable === true || key.printGuide?.boardViewSuitable === true,
+      approximateMinutes: key.approximateMinutes ?? key.printGuide?.approximateMinutes ?? null,
       manifestIndex,
       key,
     };
@@ -152,15 +156,19 @@ export function filterTeacherKeyLibrary(entries = [], {
   environment = 'all',
   subject = 'all',
   scale = 'all',
+  topic = 'all',
   favouriteIds = null,
   favouritesOnly = false,
 } = {}) {
   const words = normaliseSearch(query).split(' ').filter(Boolean);
+  const topicWords = normaliseSearch(topic).split(' ').filter(Boolean);
   const favourites = new Set(favouriteIds ?? []);
   return entries.filter((entry) => (
     (environment === 'all' || entry.environment.id === environment)
     && (subject === 'all' || entry.subject.id === subject)
     && (scale === 'all' || entry.scale === scale)
+    && (topic === 'all' || entry.subject.id === 'science')
+    && (topic === 'all' || topicWords.every((word) => entry.searchText.split(' ').includes(word)))
     && (!favouritesOnly || favourites.has(entry.id))
     && words.every((word) => entry.searchText.includes(word))
   ));

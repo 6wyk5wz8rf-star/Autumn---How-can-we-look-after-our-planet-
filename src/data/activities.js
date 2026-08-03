@@ -1,4 +1,5 @@
 import { NUMBER_EXPEDITION_ACTIVITIES } from './numberExpedition.js';
+import { LIVING_THINGS_ACTIVITIES } from './livingThings.js';
 
 /**
  * Build 1 guided pathways for Planet Atlas.
@@ -406,6 +407,7 @@ export const PLANET_ATLAS_ACTIVITIES = Object.freeze([
 export const ACTIVITIES = Object.freeze([
   ...PLANET_ATLAS_ACTIVITIES,
   ...NUMBER_EXPEDITION_ACTIVITIES,
+  ...LIVING_THINGS_ACTIVITIES,
 ]);
 
 /** Return an activity by permanent ID, or null when absent. */

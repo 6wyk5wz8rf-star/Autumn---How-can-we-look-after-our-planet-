@@ -17,14 +17,15 @@ const glossaryEntry = ({
   related,
   deeper = null,
   activeInBuild1 = domain === 'geography',
+  active = activeInBuild1,
   activationBuild = domain === 'art' ? 10 : 1,
 }) => Object.freeze({
   id,
   term,
   domain,
-  active: activeInBuild1,
-  future: !activeInBuild1,
-  available: activeInBuild1,
+  active,
+  future: !active,
+  available: active,
   activeInBuild1,
   activationBuild,
   pronunciationText: term,
@@ -254,6 +255,68 @@ const mathematicsEntries = [
   mathematicsEntry({ id: 'proof', term: 'proof', guide: 'PROOF', definition: 'A complete mathematical reason showing why a statement must be true.', visual: 'A general structure linked to every allowed case, not only one example.', example: 'Several examples may support an idea, but a proof explains why it always works.', related: ['evidence', 'counterexample', 'statement'] }),
 ];
 
+const scienceEntry = ([id, term, guide, definition, visual, example, related]) => glossaryEntry({
+  id: `science-${id}`,
+  term,
+  domain: 'science',
+  guide,
+  definition,
+  visual,
+  example,
+  related,
+  activeInBuild1: false,
+  active: true,
+  activationBuild: 3,
+});
+
+const scienceEntries = [
+  ['living-thing', 'living thing', 'LIV-ing THING', 'An organism that carries out life processes.', 'An animal, a plant and a magnified moss shoot beside one another.', 'Plants and animals are living things.', ['organism', 'habitat']],
+  ['organism', 'organism', 'OR-guh-niz-um', 'An individual living thing.', 'One specimen card selected from a larger group.', 'A robin is one organism in the bird group.', ['living-things', 'classification']],
+  ['observe', 'observe', 'ub-ZURV', 'To look or use another sense carefully to gather information.', 'An eye and magnifying lens directed at visible legs.', 'Observe the number of legs before naming the group.', ['observation', 'evidence']],
+  ['observation', 'observation', 'ob-zur-VAY-shun', 'Information noticed directly using senses or measuring tools.', 'A statement card reading “It has six legs.”', '“It has six legs” is an observation.', ['observe', 'inference']],
+  ['evidence', 'evidence', 'EV-ih-duns', 'Information used to support, challenge or refine an idea.', 'A visible feature connected to a scientific claim.', 'Feathers are evidence that the animal is a bird.', ['observation', 'prediction']],
+  ['inference', 'inference', 'IN-fuh-runs', 'An idea reached by reasoning from observations and knowledge.', 'An observation arrow leading to a possible explanation.', '“It may use its wings to move between plants” is an inference.', ['observation', 'evidence']],
+  ['characteristic', 'characteristic', 'kar-ik-tuh-RIS-tik', 'A feature or quality used to describe and compare an organism.', 'Several organisms with one shared feature highlighted.', 'Feathers are a characteristic of birds.', ['feature', 'classification']],
+  ['feature', 'feature', 'FEE-chuh', 'A part or characteristic that can be noticed or known.', 'A shell, wing, leg and leaf shown as evidence icons.', 'A visible shell can be a useful feature in a key.', ['characteristic', 'observe']],
+  ['group', 'group', 'GROOP', 'A set of things placed together because they follow a stated rule.', 'Three trays with a clear rule label above each.', 'One group may contain organisms with visible wings.', ['classify', 'rule']],
+  ['classify', 'classify', 'KLAS-ih-fy', 'To arrange living things into groups using agreed characteristics.', 'A mixed drawer connected to labelled groups.', 'Scientists classify animals using more than habitat alone.', ['classification', 'group']],
+  ['classification', 'classification', 'klas-ih-fih-KAY-shun', 'The process or system of grouping living things using characteristics.', 'Groups nested inside a larger living-things cabinet.', 'Vertebrate and invertebrate are broad classification groups.', ['classify', 'classification-key']],
+  ['classification-key', 'classification key', 'klas-ih-fih-KAY-shun KEE', 'A series of questions that narrows possibilities to identify an organism.', 'A question splitting into two labelled branches.', 'A useful key question sends organisms down two clear routes.', ['branching-key', 'question']],
+  ['branching-key', 'branching key', 'BRAN-ching KEE', 'A classification key whose two answers lead to later questions or a result.', 'A root question with yes and no branches ending in organisms.', 'Follow one branch at a time and keep the route visible.', ['classification-key', 'branch']],
+  ['question', 'question', 'KWES-chun', 'A sentence used to ask for information; in a key it needs two clear outcomes.', 'A question card above yes and no trays.', '“Does it have feathers?” is a clear binary question.', ['branch', 'outcome']],
+  ['branch', 'branch', 'BRANCH', 'One route from a question to another question or result.', 'One dark line leading from “yes” to a smaller group.', 'The yes branch contains every organism with feathers.', ['classification-key', 'outcome']],
+  ['outcome', 'outcome', 'OWT-kum', 'The result reached after following a question or sequence.', 'A route ending at one named organism.', 'A complete key ends with one organism at each outcome.', ['branch', 'identify']],
+  ['identify', 'identify', 'eye-DEN-tih-fy', 'To determine what an organism is using evidence.', 'A mystery silhouette revealed after a completed route.', 'The key helped identify the garden snail.', ['evidence', 'classification-key']],
+  ['vertebrate', 'vertebrate', 'VUR-tih-brayt', 'An animal with an internal backbone.', 'A restrained internal backbone shown inside a familiar body outline.', 'Mammals, birds, fish, reptiles and amphibians are vertebrates.', ['backbone', 'invertebrate']],
+  ['invertebrate', 'invertebrate', 'in-VUR-tih-brayt', 'An animal without a backbone.', 'A bee, spider, snail, worm and crab beside one another.', 'Invertebrates include many very different body forms.', ['vertebrate', 'backbone']],
+  ['backbone', 'backbone', 'BAK-bohn', 'The linked internal bones forming the main support along a vertebrate’s back.', 'An internal line of vertebrae contrasted with an external shell.', 'A backbone is internal and may not be visible in a photograph.', ['vertebrate', 'skeleton']],
+  ['mammal', 'mammal', 'MAM-ul', 'A vertebrate with hair or fur at some life stage whose young are fed milk.', 'A bat, dolphin and fox linked by group characteristics.', 'A dolphin is a mammal even though it lives in water.', ['vertebrate', 'hair']],
+  ['bird', 'bird', 'BURD', 'A feathered vertebrate with a beak; birds lay eggs.', 'A robin, penguin and ostrich beside a feather symbol.', 'Not every bird flies, but every bird has feathers.', ['vertebrate', 'feathers']],
+  ['fish', 'fish', 'FISH', 'A water-living vertebrate that uses gills and generally has fins.', 'Several different fish shapes beside gills and fins.', 'A dolphin lives in water but is not a fish.', ['vertebrate', 'gills']],
+  ['reptile', 'reptile', 'REP-tile', 'An air-breathing vertebrate with dry scales.', 'A snake, turtle and crocodile beside a scale texture.', 'Reptiles live in varied places, not only hot deserts.', ['vertebrate', 'scales']],
+  ['amphibian', 'amphibian', 'am-FIB-ee-un', 'A vertebrate group whose lives are linked to water and land in varied ways; familiar examples have moist skin.', 'A frog and newt beside land and water edges.', 'A newt is an amphibian that keeps its tail as an adult.', ['vertebrate', 'moist-skin']],
+  ['insect', 'insect', 'IN-sekt', 'An invertebrate with six legs and three main body sections in the adult stage.', 'Six legs counted around three linked body sections.', 'A bee is an insect; a spider is not.', ['invertebrate', 'arachnid']],
+  ['arachnid', 'arachnid', 'uh-RAK-nid', 'An invertebrate group whose familiar adult members have eight legs.', 'A spider, scorpion, harvestman and tick with eight legs marked.', 'Spiders and ticks are arachnids, not insects.', ['invertebrate', 'insect']],
+  ['mollusc', 'mollusc', 'MOL-usk', 'A varied group of soft-bodied invertebrates; some have shells.', 'A snail, mussel, slug and octopus together.', 'A slug and an octopus are molluscs without visible external shells.', ['invertebrate', 'shell']],
+  ['annelid', 'annelid', 'AN-uh-lid', 'A group of segmented worms.', 'An earthworm with repeated ring-like segments.', 'Earthworms and leeches are annelids.', ['invertebrate', 'segment']],
+  ['crustacean', 'crustacean', 'krus-TAY-shun', 'A varied arthropod group usually with a hard exoskeleton and several pairs of limbs.', 'A crab, prawn and land-living woodlouse together.', 'A woodlouse is a land-living crustacean.', ['invertebrate', 'exoskeleton']],
+  ['myriapod', 'myriapod', 'MIR-ee-uh-pod', 'An invertebrate with many body segments and many legs.', 'A centipede and millipede with different leg patterns.', 'Centipedes and millipedes are different myriapod groups.', ['invertebrate', 'segment']],
+  ['habitat', 'habitat', 'HAB-ih-tat', 'The place and conditions in which an organism lives.', 'One window containing food, water, shelter, space and conditions.', 'A woodland contains many habitats and microhabitats.', ['microhabitat', 'resource']],
+  ['microhabitat', 'microhabitat', 'MY-kroh HAB-ih-tat', 'A small habitat with particular local conditions.', 'A woodland view magnified to the damp space beneath a log.', 'Beneath a log can be a cool, damp microhabitat.', ['habitat', 'condition']],
+  ['resource', 'resource', 'REE-sors', 'Something an organism can use, such as food, water, shelter or space.', 'Food, water and shelter symbols connected to one habitat.', 'A flowering plant may provide food for an insect.', ['habitat', 'shelter']],
+  ['shelter', 'shelter', 'SHEL-tuh', 'A place or structure that offers protection.', 'A tree hole, leaf layer and stone crack.', 'A crack in a wall may provide shelter.', ['resource', 'habitat']],
+  ['condition', 'condition', 'kun-DISH-un', 'A feature of an environment such as temperature, light or moisture.', 'Three measured strips for light, moisture and temperature.', 'Shade changes light and may change soil moisture.', ['environment', 'measurement']],
+  ['environment', 'environment', 'en-VY-run-ment', 'The surroundings and conditions in which living things exist.', 'Organisms connected to air, water, ground and other living things.', 'An environment includes conditions and relationships, not only scenery.', ['habitat', 'environmental-change']],
+  ['environmental-change', 'environmental change', 'en-VY-run-MEN-tul CHAYNJ', 'A change to conditions or resources in an environment.', 'A before-and-after habitat with one condition altered.', 'Environmental change can happen naturally or through human activity.', ['environment', 'effect']],
+  ['danger', 'danger', 'DAYN-juh', 'Something that may cause harm.', 'A caution marker linked to evidence rather than a dramatic image.', 'Reduced shelter could create a danger for some organisms.', ['effect', 'prediction']],
+  ['effect', 'effect', 'ih-FEKT', 'A change that happens because of another change or influence.', 'A condition arrow leading to a possible organism response.', 'Less water may have a different effect on a frog and a fox.', ['environmental-change', 'prediction']],
+  ['prediction', 'prediction', 'prih-DIK-shun', 'A statement about what may happen based on evidence and knowledge.', 'Observed and known cards leading to a “may” statement.', 'The evidence suggests the soil may become drier.', ['evidence', 'uncertain']],
+  ['uncertain', 'uncertain', 'un-SUR-tun', 'Not known well enough to make a definite claim.', 'A question mark beside missing information.', 'We are uncertain because we do not know how long the change lasts.', ['prediction', 'evidence']],
+  ['survey', 'survey', 'SUR-vay', 'A planned way to collect observations or counts.', 'A repeated route with tally marks and a broad location label.', 'A playground survey can record organisms without precise location data.', ['tally', 'observation']],
+  ['tally', 'tally', 'TAL-ee', 'A counting mark system usually grouped in fives.', 'Four upright marks crossed by a fifth.', 'The tally converts to a total count.', ['survey', 'count']],
+  ['specimen', 'specimen', 'SPES-ih-men', 'An organism or example studied closely; in this app it is a digital record, not a collected living thing.', 'A labelled observation tray with a diagram and source card.', 'Open a specimen drawer to inspect one organism record.', ['organism', 'observe']],
+].map(scienceEntry);
+
 const artEntries = [
   glossaryEntry({ id: 'artist', term: 'artist', domain: 'art', guide: 'AR-tist', definition: 'A person who develops and communicates ideas through creative choices.', visual: 'A hand, eye, materials and idea connected around a work in progress.', example: 'An artist experiments, notices effects and decides what serves the idea.', related: ['artist-influence', 'artist-statement'] }),
   glossaryEntry({ id: 'artwork', term: 'artwork', domain: 'art', guide: 'ART-wurk', definition: 'A work created through artistic ideas, materials and choices.', visual: 'A physical work beside notes showing choices and influences.', example: 'The final artwork combines a natural force with signs of human impact.', related: ['artist', 'media', 'composition'] }),
@@ -277,7 +340,7 @@ const artEntries = [
   glossaryEntry({ id: 'artist-statement', term: 'artist statement', domain: 'art', guide: 'AR-tist STAYT-ment', definition: 'A short explanation of what inspired an artwork, what it shows and its message.', visual: 'Three linked prompts: inspired by, shows, message.', example: 'My work is inspired by ____. It shows ____. My message is ____.', related: ['artist', 'artist-influence', 'artwork'] }),
 ];
 
-export const GLOSSARY = Object.freeze([...geographyEntries, ...mathematicsEntries, ...artEntries]);
+export const GLOSSARY = Object.freeze([...geographyEntries, ...mathematicsEntries, ...scienceEntries, ...artEntries]);
 
 export const REQUIRED_ATLAS_TERMS = Object.freeze([
   'Earth', 'planet', 'globe', 'map', 'atlas', 'continent', 'country', 'region', 'ocean',
@@ -296,6 +359,16 @@ export const REQUIRED_MATHEMATICS_TERMS = Object.freeze([
   'magnitude', 'compare', 'number line', 'interval', 'estimate', 'round', 'nearest',
   'negative number', 'Roman numeral', 'sum', 'total', 'difference', 'inverse',
   'efficient', 'strategy', 'counterexample', 'proof',
+]);
+
+export const REQUIRED_SCIENCE_TERMS = Object.freeze([
+  'living thing', 'organism', 'observe', 'observation', 'evidence', 'inference',
+  'characteristic', 'feature', 'group', 'classify', 'classification', 'classification key',
+  'branching key', 'question', 'branch', 'outcome', 'identify', 'vertebrate',
+  'invertebrate', 'backbone', 'mammal', 'bird', 'fish', 'reptile', 'amphibian',
+  'insect', 'arachnid', 'mollusc', 'annelid', 'crustacean', 'myriapod', 'habitat',
+  'microhabitat', 'resource', 'shelter', 'condition', 'environment', 'environmental change',
+  'danger', 'effect', 'prediction', 'uncertain', 'survey', 'tally', 'specimen',
 ]);
 
 export function getGlossaryEntryById(id, entries = GLOSSARY) {

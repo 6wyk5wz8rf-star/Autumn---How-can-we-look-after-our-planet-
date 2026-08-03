@@ -53,6 +53,33 @@
   min-height: 44px;
 }
 
+.teacher-science-topics {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.teacher-science-topics > span {
+  margin-right: 0.25rem;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.teacher-science-topics button {
+  min-height: 42px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--line-strong, #7c7c7c);
+  border-radius: 999px;
+  background: var(--paper-light, #fbf8f1);
+}
+
+.teacher-science-topics button[aria-pressed="true"] {
+  background: var(--indigo, #30485f);
+  color: #fff;
+}
+
 .teacher-key-board-choice input {
   width: 1.25rem;
   height: 1.25rem;
@@ -145,6 +172,28 @@
 .teacher-key-card__actions {
   align-items: center;
   margin-top: auto;
+}
+
+.teacher-key-card__details {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.teacher-key-card__details div {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 0.8fr) 1.4fr;
+  gap: 0.5rem;
+}
+
+.teacher-key-card__details dt {
+  color: var(--ink-soft, #5b6466);
+  font-weight: 700;
+}
+
+.teacher-key-card__details dd {
+  margin: 0;
 }
 
 .teacher-key-card__actions .text-button {

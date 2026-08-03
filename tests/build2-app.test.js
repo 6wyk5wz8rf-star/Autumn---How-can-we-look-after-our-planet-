@@ -335,7 +335,7 @@ test('8584 and legacy 4829 open the same non-mutating, refresh-closing Teacher K
   await app.render();
   assert.match(document.body.textContent, /Teacher Key Room/);
   assert.match(document.body.textContent, /8584/);
-  assert.equal(document.querySelectorAll('[data-teacher-key-id]').length, 48);
+  assert.equal(document.querySelectorAll('[data-teacher-key-id]').length, 70);
   const search = document.querySelector('[data-teacher-filter="query"]');
   search.value = 'exchange';
   search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));

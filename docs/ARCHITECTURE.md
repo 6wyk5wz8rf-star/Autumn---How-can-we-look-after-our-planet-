@@ -2,12 +2,13 @@
 
 ## Current product boundary
 
-Build 2 has two active child environments:
+Build 3 has three active child environments:
 
 - `planet-atlas`
 - `number-expedition`
+- `living-things-observatory`
 
-The remaining eight destination records are future contracts. They stay inactive until their child experience, guided pathways, persistence, accessibility, print, offline assets, and tests are complete.
+The remaining seven destination records are future contracts. They stay inactive until their child experience, guided pathways, persistence, accessibility, print, offline assets, and tests are complete.
 
 ## Product invariants
 
@@ -28,6 +29,8 @@ These rules are architectural rather than presentational:
 13. Teacher favourites are device metadata, never learner data.
 14. Mathematical representations derive from semantic values, not independent screen copies.
 15. Physical art is documented digitally without being replaced by a drawing app.
+16. Organism records, images, classifications, habitats, and sources use permanent local IDs and validation.
+17. Environmental predictions are stored separately from observations and established knowledge.
 
 ## Application startup
 
@@ -53,6 +56,8 @@ Hash routes keep GitHub Pages hosting simple and offline-safe.
 | `#/atlas` | Open Planet Atlas | Profile; no key |
 | `#/numbers` | Number Expedition regions | Profile; no key |
 | `#/number-tool/:id` | One open mathematical instrument | Profile; no key |
+| `#/living-things` | Open Living Things Observatory | Profile; no key |
+| `#/science-tool/:id` | One open scientific instrument | Profile; no key |
 | `#/keys` | Remembered guided pathways | Profile |
 | `#/collection/:keyId` | One coherent key collection overview | Profile; collection activities are remembered on key entry |
 | `#/work` | Unified child workspace | Profile |
@@ -69,7 +74,7 @@ The route guard sends direct maintenance or guide navigation back to key entry u
 
 `src/data/destinations.js` contains all ten destination contracts. Each record contains a stable ID, ordinal, title, route, activation state/build, curriculum domains, and home-world landmark.
 
-The home world derives its child-facing destinations from `getActiveDestinations()`. Build 2 explicitly activates Number Expedition; Build 3 must explicitly activate Living Things Observatory only after its release gate passes.
+The home world derives its child-facing destinations from `getActiveDestinations()`. Build 3 explicitly activates Living Things Observatory after its data, interaction, persistence, print, offline, and regression contracts pass.
 
 ## Activity registration
 
@@ -77,8 +82,9 @@ The home world derives its child-facing destinations from `getActiveDestinations
 
 - Planet Atlas contributes eight continuous guided pathways.
 - `src/data/numberExpedition.js` contributes exactly 28 Year 4 Autumn 1 pathways.
+- `src/data/livingThings.js` contributes exactly 16 Year 4 science pathways.
 
-Every Number Expedition activity supplies:
+Every Number Expedition and Living Things Observatory activity supplies:
 
 - stable ID, order, route, region, and open-tool ID
 - permanent four-digit code
@@ -185,18 +191,18 @@ Open-tool state lives in the current app instance until saved. Guided activity s
 
 `src/data/keys.js` is the one released key manifest consumed by routing, key access, teacher search, and printing. UI modules never embed their own authoritative code list.
 
-### Build 2 manifest composition
+### Build 3 manifest composition
 
 | Type | Count | Source |
 |---|---:|---|
-| Activity | 36 | 8 preserved Atlas + 28 Number Expedition |
-| Collection | 9 | 2 preserved Atlas + 7 Number Expedition |
-| Environment | 2 | Planet Atlas + Number Expedition |
+| Activity | 52 | 8 preserved Atlas + 28 Number Expedition + 16 Living Things Observatory |
+| Collection | 14 | 2 preserved Atlas + 7 Number Expedition + 5 Living Things Observatory |
+| Environment | 3 | Planet Atlas + Number Expedition + Living Things Observatory |
 | Whole World | 1 | Preserved Build 1 wildcard |
 | Adult-only | 2 | `8584` canonical + hidden `4829` alias |
-| **Total** | **50** | Central manifest |
+| **Total** | **72** | Central manifest |
 
-`getProductionTeacherKeys()` returns the 48 active child pathway records and excludes both adult records.
+`getProductionTeacherKeys()` returns the 70 active child pathway records and excludes both adult records.
 
 ### Resolution order
 
@@ -251,7 +257,7 @@ The maintenance route requires both an active session and the controller’s unl
 
 ### Manifest projection
 
-The library derives searchable entries from active child records. Each entry receives a normalised scale, environment, curriculum subject, strand, purpose, curriculum tags, route, and print metadata. Search examines the code, title, purpose, environment, subject, strand, and tags.
+The library derives searchable entries from active child records. Each entry receives a normalised scale, environment, curriculum subject, strand, purpose, curriculum tags, route, saved outcome, suggested use, Board suitability, approximate time, and print metadata. Search examines the code, title, purpose, environment, subject, strand, and tags. Science topic chips apply the same projection; no second science key list exists.
 
 Inactive records and both adult entrances are excluded before rendering. Future active manifest records therefore appear automatically without a separate teacher list.
 
@@ -280,7 +286,7 @@ Database: `our-planet`, schema version 3.
 | `activityState` | profile + activity | Unfinished guided work |
 | `metadata` | metadata key | Active profile, settings, teacher preferences, migrations, recovery |
 
-Build 2 requires no new store or database-version increment. Number Expedition writes to existing `activityState`, `artefacts`, and `artefactVersions`; teacher preferences write to `metadata`.
+Build 3 requires no new store or database-version increment. Number Expedition and Living Things Observatory write to existing `activityState`, `artefacts`, and `artefactVersions`; teacher preferences write to `metadata`.
 
 ### Migration policy
 
@@ -289,7 +295,7 @@ Build 2 requires no new store or database-version increment. Number Expedition w
 - Keep readers tolerant of missing optional fields.
 - Validate records on read and import.
 - Quarantine malformed records with a reason and timestamp.
-- Preserve Build 1 backup compatibility.
+- Preserve Build 1 and Build 2 backup compatibility.
 - Test migration from every released database version.
 
 ## Shared artefact compatibility
@@ -298,15 +304,17 @@ The record envelope separates identity from domain content. Core fields identify
 
 Number Expedition registers 17 active artefact types. Their content requires `modelState` and may retain original and final values, recent mathematical actions, representations, answer state, estimate, explanation, strategy, generator seed, scaffold, activity, steps, counterexample, and units.
 
-`updateArtefact()` writes the prior and new states to `artefactVersions`. `duplicateArtefact()` creates a separate record linked to the source. Reopening a mathematical artefact restores its tool and `modelState` instead of displaying only a static image.
+Living Things Observatory registers 20 science artefact types. Their content requires `scienceState` and may retain permanent organism and asset IDs, selected features, grouping memberships and rules, classification branches, question histories, habitat models, evidence/knowledge/prediction/uncertainty statements, survey provenance, generator seed, cross-destination links, and validated child-created challenge data. Broken-key records retain both the deliberate fault and the selected repair.
+
+`updateArtefact()` writes the prior and new states to `artefactVersions`. `duplicateArtefact()` creates a separate record linked to the source. Reopening a mathematical or scientific artefact restores its original tool and semantic state instead of displaying only a static image.
 
 Planet Question responses remain separate because their append-only comparison timeline is a distinct product behaviour.
 
 ## Board View
 
-Board View is rendered from the same Number Expedition state and model renderer as the learner workspace. It does not create a second calculation or mutate saved work merely by opening.
+Board View is rendered from the same Number Expedition or Living Things Observatory state and model renderer as the learner workspace. It does not create a second calculation, scientific record, or saved-work mutation merely by opening.
 
-It exposes previous/next step, label visibility, answer visibility, a short annotation, and one explicit exit. Returning reveals the same workspace state. The fixed surface uses classroom-scale layout and hides normal workspace chrome.
+It exposes context-appropriate previous/next, reveal, reset, and annotation controls with one explicit exit. Returning reveals the same workspace state. The fixed surface uses classroom-scale layout, anonymises learner work, and hides normal workspace chrome.
 
 The Teacher Key Room’s full-screen code display is a separate presentation component and does not share learner model state.
 
@@ -314,19 +322,19 @@ The Teacher Key Room’s full-screen code display is a separate presentation com
 
 `AtlasMap` remains a self-contained dynamically imported component. It uses `d3-geo`, `topojson-client`, compact `world-atlas` geometry, and a lazily loaded detailed geometry chunk. It owns no learner storage; the app saves its semantic state through the shared artefact service.
 
-Build 2 must not change Atlas IDs, routes, map-state meaning, geography provenance, or existing artefact contracts.
+Build 3 does not change Atlas IDs, routes, map-state meaning, geography provenance, or existing artefact contracts. Science links request a researched Atlas context while explicitly separating a map location from proof of species presence.
 
 ## Accessibility separation
 
 Settings are stored per learner and applied to the document and interactive components. They include scaffold level, text scale, spoken instructions, place-name speech, captions, reduced motion, reduced complexity, high contrast, and sound volume.
 
-Number Expedition uses stable column positions, input labels, large controls, keyboard-operable native inputs, non-drag controls, undo/redo, spoken-number support, and reduced-motion CSS. Scaffold metadata changes prompts and visible support without changing permission, scoring, or the objective.
+Number Expedition uses stable column positions, input labels, large controls, keyboard-operable native inputs, non-drag controls, undo/redo, spoken-number support, and reduced-motion CSS. Living Things Observatory adds large zoomable organism illustrations, colour-independent selections, tap-to-place sorting, persistent rules and question histories, spoken names, semantic HTML/SVG classification trees, and compact scaffold-sensitive organism sets. Scaffold metadata changes prompts and visible support without changing permission, scoring, or the objective.
 
 ## Offline build
 
 Vite emits content-hashed chunks. `scripts/inject-sw-assets.mjs` scans `dist`, excludes source maps and the worker itself, and injects every deployable file into the worker’s precache list.
 
-This includes the dynamically imported Atlas and Number Expedition chunks. A learner can therefore install from the home world and later open either environment offline.
+This includes the dynamically imported Atlas, Number Expedition, and Living Things Observatory chunks plus local organism, habitat, glossary, print, and core audio contracts. A learner can therefore install from the home world and later open any completed environment offline.
 
 The deployment workflow serialises against the repository's remaining legacy branch Pages publisher, then deploys the built artefact last. This prevents the branch job from overwriting `dist` with raw source while retaining a clean migration path to a GitHub-Actions-only Pages source setting.
 
@@ -334,9 +342,9 @@ The worker waits rather than replacing an active build mid-session. Cache cleanu
 
 ## Print architecture
 
-Teacher guides and cards use the active manifest projection as their only code source. My Work and Number Expedition use semantic markup rather than screenshots.
+Teacher guides and cards use the active manifest projection as their only code source. My Work, Number Expedition, and Living Things Observatory use semantic markup rather than screenshots.
 
-Print CSS removes navigation and controls, uses A4 margins and monochrome-safe colours, repeats table headings, protects card and artefact boundaries, preserves digit alignment, and retains SVG number-line geometry.
+Print CSS removes navigation and controls, uses A4 margins and monochrome-safe colours, repeats table headings, protects card and artefact boundaries, preserves digit alignment and SVG number-line geometry, and keeps organism images, evidence labels, and classification branch lines attached to their records.
 
 iPad Safari pagination and clipping remain manual release checks because they cannot be fully established by Node or CSS-contract tests.
 
@@ -344,21 +352,18 @@ iPad Safari pagination and clipping remain manual release checks because they ca
 
 Art curriculum, artist metadata, artwork rights, and physical-art artefact types remain registered and inactive until Build 10. Metadata about an artwork is not permission to reproduce it.
 
-## Build 3 extension points
+## Build 4 extension points
 
-Living Things Observatory must extend the existing architecture with:
+Climate Laboratory can extend the released Build 3 architecture through:
 
-- structured organism records and observable features
-- free sorting and regrouping state
-- vertebrate and invertebrate relationships
-- branching classification-key data and validation
-- habitat records and environmental-change scenarios
-- scientific observation, grouping, key, habitat, and explanation artefacts
-- scientific Activity / Collection / Environment keys in the central manifest
-- automatic Teacher Key Room inclusion
-- concept-graph links to habitat, environmental change, geography, number, and evidence
-- a dynamically imported destination UI
+- sourced weather and climate records with source year, unit, location, and rounding notes
+- broad climate-zone and biome links that reuse Atlas place IDs and science habitat IDs
+- signed temperature, rainfall, seasonality, and Number Expedition representation adapters
+- evidence/knowledge/prediction/uncertainty statements using the released science model
+- climate Activity / Collection / Environment records in the central manifest
+- local deterministic scenario generation and validation
+- shared artefact, profile, Board View, print, backup, teacher, glossary, concept-graph, and offline services
 
-It must reuse profiles, settings, key access, artefacts, versions, backup, print, teacher, and offline services. Do not create subject-specific profiles, a science-only work store, a manually maintained teacher code list, or shallow creature quizzes.
+Build 4 must not infer species presence from a climate zone, turn one variable into a complete biome simulation, repurpose released codes or IDs, or create a climate-only account or work store.
 
-The complete Build 3 extension contract is in [Build 3 Handover](BUILD-2-HANDOVER.md).
+The detailed Build 3 scientific contracts are in [Living Things Technical Architecture](SCIENCE-ARCHITECTURE.md), and the next-build boundary is in [Build 4 Handover](BUILD-3-HANDOVER.md).

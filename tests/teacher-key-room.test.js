@@ -169,6 +169,28 @@ test('teacher library is generated from active manifest records and supports use
   assert.ok(groupTeacherKeyLibrary(entries).find((group) => group.id === 'number-expedition'));
 });
 
+test('8584 science search and quick-topic filters come from the same Build 3 manifest', () => {
+  const entries = createTeacherKeyLibrary(KEY_MANIFEST, { destinations: DESTINATIONS });
+  assert.equal(entries.length, 70);
+  for (const query of ['living things', 'vertebrate', 'invertebrate', 'classification', 'key', 'habitat', 'environmental change', 'organism', 'sorting']) {
+    assert.ok(filterTeacherKeyLibrary(entries, { query }).length >= 1, `Teacher search should find ${query}`);
+  }
+  for (const topic of ['observation', 'grouping', 'vertebrates', 'invertebrates', 'classification keys', 'habitats', 'environmental change']) {
+    const matches = filterTeacherKeyLibrary(entries, { topic });
+    assert.ok(matches.length >= 1, `Teacher topic should find ${topic}`);
+    assert.ok(matches.every(({ subject }) => subject.id === 'science'));
+  }
+  const scienceActivities = filterTeacherKeyLibrary(entries, {
+    subject: 'science',
+    environment: 'living-things-observatory',
+    scale: 'activity',
+  });
+  assert.equal(scienceActivities.length, 16);
+  assert.ok(scienceActivities.every(({ savedOutcome, usefulMoments, boardViewSuitable, approximateMinutes }) => (
+    savedOutcome && usefulMoments.length && boardViewSuitable && approximateMinutes
+  )));
+});
+
 test('teacher favourites are device-level, manifest constrained and backup-compatible metadata', async () => {
   const manifest = upgradedManifest();
   let saved = null;

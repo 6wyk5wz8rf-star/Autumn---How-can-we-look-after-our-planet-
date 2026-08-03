@@ -94,6 +94,23 @@ const numberType = (record) => ({
   ...record,
 });
 
+const scienceType = (record) => ({
+  destinationIds: ['living-things-observatory'],
+  active: true,
+  activationBuild: 3,
+  versioned: true,
+  printable: true,
+  supportedExplanationModes: ['voice', 'short-text', 'selection', 'annotation', 'diagram-construction'],
+  requiredContent: ['scienceState'],
+  optionalContent: [
+    'organismIds', 'selectedFeatures', 'groupingRule', 'groupMemberships',
+    'branchLogic', 'questionHistory', 'habitatData', 'changeScenario',
+    'evidenceLabels', 'surveyRows', 'generatorSeed', 'scaffold', 'linkedPlaceIds',
+    'linkedMathematicsIds', 'photoDataUrl', 'challengeData',
+  ],
+  ...record,
+});
+
 const NUMBER_ARTEFACT_TYPES = [
   ['four-digit-model', 'Four-digit Model', 'place-value'],
   ['partition-card', 'Partition Card', 'place-value'],
@@ -113,6 +130,29 @@ const NUMBER_ARTEFACT_TYPES = [
   ['counterexample', 'Counterexample', 'proof'],
   ['child-created-challenge', 'Child-created Challenge', 'challenge'],
 ].map(([id, label, category]) => numberType({ id, label, category }));
+
+const SCIENCE_ARTEFACT_TYPES = [
+  ['organism-observation', 'Organism Observation', 'observation'],
+  ['organism-comparison', 'Organism Comparison', 'comparison'],
+  ['free-sorting-board', 'Free Sorting Board', 'grouping'],
+  ['grouping-rule', 'Grouping Rule', 'grouping'],
+  ['tested-grouping-rule', 'Tested Grouping Rule', 'grouping'],
+  ['backbone-classification', 'Backbone Classification', 'classification'],
+  ['vertebrate-group-comparison', 'Vertebrate-group Comparison', 'classification'],
+  ['invertebrate-diversity-panel', 'Invertebrate Diversity Panel', 'classification'],
+  ['classification-key-route', 'Classification-key Route', 'classification-key'],
+  ['classification-question-analysis', 'Classification Question Analysis', 'classification-key'],
+  ['branching-classification-key', 'Branching Classification Key', 'classification-key'],
+  ['repaired-key', 'Repaired Key', 'classification-key'],
+  ['mystery-organism-trail', 'Mystery-organism Trail', 'classification-key'],
+  ['habitat-needs-map', 'Habitat-needs Map', 'habitat'],
+  ['microhabitat-observation', 'Microhabitat Observation', 'habitat'],
+  ['habitat-model', 'Habitat Model', 'habitat'],
+  ['environmental-change-chain', 'Environmental-change Chain', 'environmental-change'],
+  ['environmental-response-comparison', 'Environmental-response Comparison', 'environmental-change'],
+  ['survey-record', 'Survey Record', 'survey'],
+  ['child-created-science-challenge', 'Child-created Science Challenge', 'challenge'],
+].map(([id, label, category]) => scienceType({ id, label, category }));
 
 export const ARTEFACT_TYPES = Object.freeze([
   atlasType({
@@ -194,6 +234,7 @@ export const ARTEFACT_TYPES = Object.freeze([
   },
 
   ...NUMBER_ARTEFACT_TYPES,
+  ...SCIENCE_ARTEFACT_TYPES,
 
   // Build 10 contracts: registered now so photographs and physical work survive
   // the same My Work lifecycle, but deliberately not exposed in Build 1.

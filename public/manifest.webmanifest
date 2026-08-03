@@ -1,7 +1,7 @@
 {
   "name": "How Can We Look After Our Planet?",
   "short_name": "Our Planet",
-  "description": "An open-world Year 4 learning environment with geography and mathematics field stations.",
+  "description": "An open-world Year 4 learning environment for geography, mathematics and scientific observation.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
@@ -17,6 +17,7 @@
   "shortcuts": [
     { "name": "Planet Atlas", "short_name": "Atlas", "url": "./#/atlas" },
     { "name": "Number Expedition", "short_name": "Numbers", "url": "./#/numbers" },
+    { "name": "Living Things Observatory", "short_name": "Living Things", "url": "./#/living-things" },
     { "name": "Enter a Key", "short_name": "Key", "url": "./#/key" },
     { "name": "My Work", "short_name": "Work", "url": "./#/work" }
   ]

@@ -18,7 +18,7 @@ const NAV_ITEMS = [
 ];
 
 function currentNav(routeName) {
-  if (['home', 'atlas', 'numbers', 'number-tool', 'activity'].includes(routeName)) return 'home';
+  if (['home', 'atlas', 'numbers', 'number-tool', 'living-things', 'science-tool', 'activity'].includes(routeName)) return 'home';
   if (['work', 'work-detail'].includes(routeName)) return 'work';
   if (routeName === 'keys') return 'keys';
   if (routeName === 'key') return 'key';

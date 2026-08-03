@@ -25,6 +25,23 @@ function domId(value) {
   return String(value ?? 'group').replace(/[^a-z0-9_-]+/gi, '-');
 }
 
+const SCIENCE_TOPICS = Object.freeze([
+  ['observation', 'Observation'],
+  ['grouping', 'Grouping'],
+  ['vertebrates', 'Vertebrates'],
+  ['invertebrates', 'Invertebrates'],
+  ['classification keys', 'Classification Keys'],
+  ['habitats', 'Habitats'],
+  ['environmental change', 'Environmental Change'],
+]);
+
+const momentLabel = (value) => ({
+  encounter: 'first encounter',
+  'during-teaching': 'during teaching',
+  'after-teaching': 'after teaching',
+  revisit: 'revisit',
+})[value] || value;
+
 function keyCard(entry, favourites) {
   const favourite = favourites.has(entry.id);
   const openLabel = ({
@@ -40,6 +57,12 @@ function keyCard(entry, favourites) {
     </div>
     <h4>${escapeHTML(entry.title)}</h4>
     <p>${escapeHTML(entry.purpose)}</p>
+    <dl class="teacher-key-card__details">
+      ${entry.savedOutcome ? `<div><dt>Saved outcome</dt><dd>${escapeHTML(entry.savedOutcome.replaceAll('-', ' '))}</dd></div>` : ''}
+      ${entry.usefulMoments.length ? `<div><dt>Suggested use</dt><dd>${escapeHTML(entry.usefulMoments.map(momentLabel).join(' · '))}</dd></div>` : ''}
+      <div><dt>Board View</dt><dd>${entry.boardViewSuitable ? 'Suitable' : 'Not designed for Board View'}</dd></div>
+      ${entry.approximateMinutes ? `<div><dt>Approximate time</dt><dd>${escapeHTML(entry.approximateMinutes)} minutes</dd></div>` : ''}
+    </dl>
     <div class="teacher-key-card__actions">
       <button class="button" type="button" data-teacher-action="open" data-key-id="${escapeAttr(entry.id)}">${escapeHTML(openLabel)}</button>
       <button class="button secondary" type="button" data-teacher-action="display" data-key-id="${escapeAttr(entry.id)}">Display code</button>
@@ -58,7 +81,7 @@ function quickKey(entry) {
 
 export function renderTeacherKeyResults(entries, favouriteIds = []) {
   if (!entries.length) {
-    return '<div class="teacher-key-empty" role="status"><h3>No matching keys</h3><p>Clear one filter or try a curriculum word such as rounding, exchange or Gambia.</p></div>';
+    return '<div class="teacher-key-empty" role="status"><h3>No matching keys</h3><p>Clear one filter or try a curriculum word such as classification, habitat, rounding, exchange or Gambia.</p></div>';
   }
   const favourites = new Set(favouriteIds);
   return groupTeacherKeyLibrary(entries).map((environment) => `<section class="teacher-key-group" aria-labelledby="teacher-key-group-${escapeAttr(domId(environment.id))}">
@@ -79,6 +102,7 @@ export function renderTeacherKeyRoom({
     environment: 'all',
     subject: 'all',
     scale: 'all',
+    topic: 'all',
     ...filters,
   };
   const options = getTeacherKeyFilterOptions(entries);
@@ -95,6 +119,7 @@ export function renderTeacherKeyRoom({
       <label><span>Environment</span><select data-teacher-filter="environment">${option('all', 'All environments', state.environment)}${options.environments.map((item) => option(item.id, item.title, state.environment)).join('')}</select></label>
       <label><span>Curriculum</span><select data-teacher-filter="subject">${option('all', 'All curriculum', state.subject)}${options.subjects.map((item) => option(item.id, item.title, state.subject)).join('')}</select></label>
       <label><span>Scale</span><select data-teacher-filter="scale">${option('all', 'Every scale', state.scale)}${options.scales.map((item) => option(item.id, item.title, state.scale)).join('')}</select></label>
+      <div class="teacher-science-topics" role="group" aria-label="Science topic filters"><span>Science topics</span>${SCIENCE_TOPICS.map(([value, label]) => `<button type="button" data-teacher-action="topic" data-topic="${escapeAttr(value)}" aria-pressed="${state.topic === value}">${escapeHTML(label)}</button>`).join('')}</div>
       <label class="teacher-key-board-choice"><input type="checkbox" data-teacher-board-title ${showTitleOnBoard ? 'checked' : ''} /> Show the pathway title with the code</label>
     </section>
 
@@ -156,7 +181,7 @@ export class TeacherKeyRoomController {
     this.onFeedback = onFeedback;
     this.onError = onError;
     this.preferences = this.preferencesStore.getSnapshot();
-    this.filters = { query: '', environment: 'all', subject: 'all', scale: 'all' };
+    this.filters = { query: '', environment: 'all', subject: 'all', scale: 'all', topic: 'all' };
     this.display = new FullScreenKeyDisplay({ document: root.ownerDocument });
     this.onInput = this.onInput.bind(this);
     this.onChange = this.onChange.bind(this);
@@ -220,6 +245,13 @@ export class TeacherKeyRoomController {
     const action = button.dataset.teacherAction;
     const entry = getTeacherKeyEntry(button.dataset.keyId, this.entries);
     try {
+      if (action === 'topic') {
+        this.filters.topic = this.filters.topic === button.dataset.topic ? 'all' : button.dataset.topic;
+        this.root.querySelectorAll('[data-teacher-action="topic"]').forEach((topicButton) => {
+          topicButton.setAttribute('aria-pressed', String(this.filters.topic === topicButton.dataset.topic));
+        });
+        this.renderResults();
+      }
       if (action === 'exit') {
         const returnLocation = this.session?.close?.() ?? null;
         await this.call(this.onExit, returnLocation);

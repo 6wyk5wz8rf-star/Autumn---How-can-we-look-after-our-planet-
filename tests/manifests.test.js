@@ -35,6 +35,7 @@ import {
 import {
   GLOSSARY,
   REQUIRED_MATHEMATICS_TERMS,
+  REQUIRED_SCIENCE_TERMS,
   REQUIRED_ART_TERMS,
   REQUIRED_ATLAS_TERMS,
   getGlossaryEntriesByTerm,
@@ -58,15 +59,16 @@ const EXPECTED_ACTIVITY_IDS = [
   'understand-before-action',
 ];
 
-test('all ten destinations are registered while Build 2 activates Atlas and Number Expedition', () => {
+test('all ten destinations are registered while Build 3 activates Atlas, Number Expedition and Living Things Observatory', () => {
   assert.equal(DESTINATIONS.length, 10);
   assert.deepEqual(DESTINATIONS.map(({ ordinal }) => ordinal), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   assert.equal(new Set(DESTINATIONS.map(({ id }) => id)).size, 10);
-  assert.deepEqual(getActiveDestinations().map(({ id }) => id), ['planet-atlas', 'number-expedition']);
+  assert.deepEqual(getActiveDestinations().map(({ id }) => id), ['planet-atlas', 'number-expedition', 'living-things-observatory']);
   assert.equal(getDestinationById('planet-atlas')?.route, '#/atlas');
   assert.equal(getDestinationById('tides-of-change-studio')?.activationBuild, 10);
   assert.equal(getDestinationById('number-expedition')?.active, true);
   assert.equal(getDestinationById('number-expedition')?.route, '#/numbers');
+  assert.equal(getDestinationById('living-things-observatory')?.route, '#/living-things');
 });
 
 test('Planet Atlas exposes exactly eight substantial guided pathways', () => {
@@ -103,14 +105,30 @@ test('Number Expedition exposes exactly 28 Autumn 1 pathways in seven regions', 
   }
 });
 
+test('Living Things Observatory exposes 16 Year 4 pathways and active scientific vocabulary', () => {
+  const scienceActivities = getActivitiesForDestination('living-things-observatory');
+  assert.equal(scienceActivities.length, 16);
+  assert.equal(new Set(scienceActivities.map(({ regionId }) => regionId)).size, 6);
+  for (const activity of scienceActivities) {
+    assert.equal(activity.active, true);
+    assert.ok(activity.curriculumObjective);
+    assert.ok(activity.toolId);
+    assert.ok(activity.likelyMisconceptions.length);
+    assert.ok(activity.outcome?.artefactTypeId);
+  }
+  for (const term of REQUIRED_SCIENCE_TERMS) {
+    assert.ok(getGlossaryEntriesByTerm(term).some(({ active }) => active), `Science glossary term should be active: ${term}`);
+  }
+});
+
 test('the permanent key manifest is valid, unique and complete', () => {
   const validation = validateKeyManifest(KEY_MANIFEST);
   assert.equal(validation.valid, true, validation.errors.join('\n'));
-  assert.equal(KEY_MANIFEST.length, 50);
-  assert.equal(new Set(KEY_MANIFEST.map(({ code }) => code)).size, 50);
-  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.ACTIVITY).length, 36);
-  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.COLLECTION).length, 9);
-  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.DESTINATION).length, 2);
+  assert.equal(KEY_MANIFEST.length, 72);
+  assert.equal(new Set(KEY_MANIFEST.map(({ code }) => code)).size, 72);
+  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.ACTIVITY).length, 52);
+  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.COLLECTION).length, 14);
+  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.DESTINATION).length, 3);
   assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.WORLD).length, 1);
   assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.MAINTENANCE).length, 2);
 

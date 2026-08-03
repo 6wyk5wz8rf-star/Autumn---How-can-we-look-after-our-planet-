@@ -13,6 +13,7 @@ test('the install manifest stays GitHub Pages subpath-safe and supports either i
   assert.ok(manifest.icons.some(({ sizes }) => sizes === '192x192'));
   assert.ok(manifest.icons.some(({ sizes }) => sizes === '512x512'));
   assert.ok(manifest.shortcuts.every(({ url }) => url.startsWith('./#/')));
+  assert.ok(manifest.shortcuts.some(({ url }) => url === './#/living-things'));
 });
 
 test('the service worker keeps a good shell and receives an automatic build identifier', async () => {
@@ -33,4 +34,13 @@ test('print styles establish A4 pages and deliberate Atlas output sizing', async
   assert.match(printCss, /\.key-guide-page[\s\S]*break-after:\s*page/);
   assert.match(printCss, /\.atlas-map(?:\s+svg|__stage)[\s\S]*(?:mm|max-height)/);
   assert.match(printCss, /\.no-print[\s\S]*display:\s*none/);
+});
+
+test('Living Things print rules preserve organism diagrams, branches and monochrome A4 work', async () => {
+  const scienceCss = await read('../src/destinations/living-things/living-things.css');
+  assert.match(scienceCss, /@media print/);
+  assert.match(scienceCss, /\.science-tree ol:before/);
+  assert.match(scienceCss, /border-color:#000/);
+  assert.match(scienceCss, /\.organism-illustration svg\{max-height:70mm\}/);
+  assert.match(scienceCss, /\.survey-table/);
 });

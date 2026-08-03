@@ -2,7 +2,7 @@
 
 An open-world, cross-curricular Year 4 learning environment designed to live beside classroom teaching.
 
-Build 2 preserves the complete Planet Atlas foundation and activates the second environment: **Number Expedition**.
+Build 3 preserves Planet Atlas and Number Expedition and activates the third environment: **Living Things Observatory**.
 
 > The world is open to explore. Keys reveal particularly useful paths through it. Teaching helps children see more whenever they return.
 
@@ -10,7 +10,7 @@ Build 2 preserves the complete Planet Atlas foundation and activates the second 
 
 The current product contains:
 
-- a calm open-world home with **Planet Atlas** and **Number Expedition**
+- a calm open-world home with **Planet Atlas**, **Number Expedition**, and **Living Things Observatory**
 - four stable child destinations: **Our Planet**, **My Keys**, **My Work**, and **Enter a Key**
 - separate local learner profiles for shared iPads
 - open exploration without a code
@@ -23,6 +23,7 @@ The current product contains:
 - a manifest-generated Teacher Key Room and printable Key Guide
 - the complete interactive Planet Atlas and its eight guided pathways
 - the complete Year 4 Autumn 1 Number Expedition: 28 guided pathways, seven regions, and 17 open tools
+- the complete Year 4 Living Things Observatory: 16 guided pathways, six connected regions, 18 open tools, and 56 validated organism records
 
 Build 1.1 also removed competing Atlas routes and grouped the five-part learning rhythm into three coherent child-facing stages: **Look & explore**, **Make & explain**, and **Save & revisit**. The underlying rhythm remains **Notice → Explore → Make → Explain → Revisit**.
 
@@ -30,7 +31,7 @@ Build 1.1 also removed competing Atlas routes and grouped the five-part learning
 
 ### Completed environments are open
 
-Children may enter Planet Atlas or Number Expedition without a code. A key is never permission to encounter the curriculum.
+Children may enter Planet Atlas, Number Expedition, or Living Things Observatory without a code. A key is never permission to encounter the curriculum.
 
 Open Planet Atlas includes globe and flat-map views, zoom, pan, labels, equator, oceans, markers, routes, place comparison, questions, and saved snapshots.
 
@@ -51,7 +52,7 @@ The fourth digit resolves immediately. Activity keys open the exact guided pathw
 
 ### One child workspace
 
-Atlas investigations and mathematical models use the same My Work service. Later builds extend this workspace rather than creating subject-specific storage silos.
+Atlas investigations, mathematical models, and scientific records use the same My Work service. Later builds extend this workspace rather than creating subject-specific storage silos.
 
 ## Ten environments
 
@@ -59,7 +60,7 @@ Atlas investigations and mathematical models use the same My Work service. Later
 |---:|---|---|
 | 1 | Planet Atlas | Active |
 | 2 | Number Expedition | Active |
-| 3 | Living Things Observatory | Registered, inactive |
+| 3 | Living Things Observatory | Active |
 | 4 | Climate Laboratory | Registered, inactive |
 | 5 | Materials River | Registered, inactive |
 | 6 | Story Theatre | Registered, inactive |
@@ -175,19 +176,87 @@ The mathematical domain layer lives in `src/maths/` and is independent of the de
 
 `src/maths/taskGenerator.js` exposes one seeded generator for all 28 pathways and the open-tool modes. Generated tasks carry a stable task ID, seed, generator version, curriculum tags, semantic values, solution, and explanation. Each task is validated against its domain before use.
 
+## Living Things Observatory
+
+Living Things Observatory is a calm field station and natural-history workspace organised around **Observation → Evidence → Grouping → Classification → Connection → Change**. These describe scientific thinking, not locked child levels. Every completed tool is open without a key.
+
+### Six connected regions and 18 open tools
+
+| Region | Open tools | Scientific focus |
+|---|---|---|
+| Observation Tables | Organism Browser; Observation Lens; Compare Organisms | Close looking, visible features, observation, inference, opinion, and comparison |
+| Sorting Meadow | Free Sorting; Group Rule Tester | Child-created groups, stated rules, overlapping groups, and rule testing |
+| Backbone Gallery | Backbone Explorer; Vertebrate Group Gallery; Invertebrate Diversity Gallery | Internal backbone knowledge, five vertebrate groups, and varied invertebrates |
+| Classification Key Workshop | Follow, Build, and Repair a Classification Key; Mystery Organism | Binary questions, branching, validation, complete endpoints, repair, and question efficiency |
+| Habitat Windows | Habitat Windows; Microhabitat Lens; Habitat Builder | Conditions, resources, organism needs, habitat scale, and non-exclusive habitat links |
+| Change Laboratory | Change Laboratory; Survey Builder; Create a Scientific Challenge | Observed / known / predicted / uncertain evidence, differing responses, and local data |
+
+The scientific UI lives in `src/destinations/living-things/`. It uses accessible HTML and SVG rather than a canvas-only model. All organism buttons have tap and keyboard operation; no task is timed; Board View is anonymous and non-persistent.
+
+### Organism, habitat, and illustration library
+
+`src/data/organisms.js` contains 56 permanent records: 26 vertebrates across mammals, birds, fish, reptiles, and amphibians; 24 varied invertebrates; and six plants. Ten broad habitats and eight microhabitats are referenced by stable IDs. Records store classification, observable characteristics, body covering, visible limbs, wings, shell/exoskeleton, segmentation, movement, habitats, food relationship, UK/Gambian/global context, pronunciation, child and teacher notes, misconception cautions, curriculum tags, scientific sources, and image-rights metadata.
+
+The application uses original local diagrammatic SVG illustrations. Every illustration is labelled as not to scale and stores creator, licence, attribution, verification date, and a caution against treating the drawing as the sole source of evidence. No runtime image API, hotlink, scraped image, or remote audio dependency is used. Full source and rights notes are in [Science Sources and Asset Rights](docs/SCIENCE-SOURCES.md).
+
+### Classification and scientific generation
+
+`src/science/classification.js` supplies approved binary questions, question validation, useful-question comparison, tree construction, route following, and structural validation. It rejects vague or opinion language, questions that send every selected organism to one branch, missing branches, loops, lost organisms, unreachable or shared final endpoints, unknown questions, and data-incompatible labels.
+
+`src/science/generator.js` deterministically generates comparison sets, sorting sets, vertebrate/invertebrate sets, complete classification keys, Mystery Organisms, deliberate broken keys, habitat tasks, microhabitats, environmental-change scenarios, surveys, and challenge foundations. Seeds are saved in My Work. Generated keys are validated before use; deliberate broken-key fixtures are separately validated as coherent and repairable.
+
+### Sixteen guided activities and permanent codes
+
+| # | Guided activity | Key | Saved outcome |
+|---:|---|:---:|---|
+| 1 | Look Like a Scientist | `5427` | Organism observation |
+| 2 | Compare Two Living Things | `8164` | Organism comparison |
+| 3 | Make Your Own Groups | `2935` | Free sorting board |
+| 4 | Test the Grouping Rule | `6702` | Tested grouping rule |
+| 5 | Backbone or No Backbone? | `4396` | Backbone classification |
+| 6 | Meet the Vertebrate Groups | `1852` | Vertebrate-group comparison |
+| 7 | Invertebrates Are Not One Shape | `7249` | Invertebrate diversity panel |
+| 8 | Follow a Classification Key | `3516` | Classification-key route |
+| 9 | Choose a Useful Question | `9083` | Classification-question analysis |
+| 10 | Build a Classification Key | `4671` | Branching classification key |
+| 11 | Repair the Broken Key | `6325` | Repaired key |
+| 12 | Solve the Mystery Organism | `2594` | Mystery-organism trail |
+| 13 | What Does a Habitat Provide? | `7816` | Habitat-needs map |
+| 14 | Look Closer at a Microhabitat | `5149` | Microhabitat observation |
+| 15 | When an Environment Changes | `8362` | Environmental-change chain |
+| 16 | Different Living Things, Different Effects | `1946` | Environmental-response comparison |
+
+Collection keys are **Observe and Compare** `6284`, **Group Living Things** `9735`, **Classification Keys** `4068`, **Habitats and Needs** `7512`, and **Environmental Change** `2849`. Environment key `6193` remembers every current Living Things pathway and retains its future wildcard. Whole-world key `7046` now materialises all 52 current guided activities.
+
+Every science activity stores its stable ID, objective, concise invitation, Notice / Explore / Make / Explain rhythm, optional unscored Key Check, misconceptions, vocabulary, Light/Core/Strong/Intensive scaffold behaviour, My Work type, print contract, Board suitability, and approximate time.
+
+### Habitats, environmental change, and cross-destination links
+
+Habitat reasoning treats food, water, shelter, space, temperature, reproduction sites, surfaces/soil, and other living things as possible needs. Habitat records never assign an organism one permanent “correct home”. Habitat Windows can open researched UK, Gambian, River Gambia, or Atlantic context in Planet Atlas while explicitly warning that a map location does not prove species presence.
+
+Change Laboratory changes one condition at a time and labels statements as **We observed**, **We know**, **We predict**, or **We are unsure**. Ten authored scenarios include reduced/increased water, warmer/colder conditions, plant-cover loss, litter, development, shade, a new food source, and restoration. Possible effects use cautious language and allow benefits, pressures, different responses, and missing evidence. Survey Builder distinguishes child-entered from fictional learning data, stores only a broad child-entered location label, and links totals to Number Expedition without inventing environmental statistics.
+
+### Scientific My Work, Board View, print, and offline use
+
+Twenty active science artefact types use the existing versioned envelope. Saved records retain organism IDs, illustration references, selected features, group memberships, branch logic, question history, habitat/change/survey data, explanation, scaffold, activity ID, curriculum tags, source links, and generator seed. Reopening and revising appends a version; the original remains available. Open scientific tools and guided activities use the same save service.
+
+Board View enlarges the current anonymous model, keeps learner identity and saving out of the display, and restores the exact pre-Board state on exit. A4 print rules preserve local organism diagrams, classification branches, group labels, survey rows, and environmental-change chains in monochrome while hiding controls. The production build injects the lazy Living Things bundle, metadata, illustrations, glossary, templates, and print CSS into the same versioned service-worker cache as the shell.
+
+The complete scientific data model and extension points are documented in [Living Things Technical Architecture](docs/SCIENCE-ARCHITECTURE.md).
+
 ## Permanent key architecture
 
 `src/data/keys.js` is the sole released key authority for child routing, My Keys, the Teacher Key Room, and printing.
 
-The Build 2 manifest contains 50 records:
+The Build 3 manifest contains 72 records:
 
-- 36 Activity keys: eight Planet Atlas and 28 Number Expedition
-- nine Collection keys: two Planet Atlas and seven Number Expedition
-- two Environment keys
+- 52 Activity keys: eight Planet Atlas, 28 Number Expedition, and 16 Living Things Observatory
+- 14 Collection keys: two Planet Atlas, seven Number Expedition, and five Living Things Observatory
+- three Environment keys
 - one Whole World key
 - two adult-only records: the permanent `8584` entrance and hidden `4829` compatibility alias
 
-The Teacher Key Room library contains the 48 active child pathway records. Adult entrances are never listed as child pathways.
+The Teacher Key Room library contains the 70 active child pathway records. Adult entrances are never listed as child pathways.
 
 ### Preserved Build 1 codes
 
@@ -277,7 +346,7 @@ Planet Question responses remain separate append-only records so later thinking 
 
 ## Board View
 
-Every mathematical workspace can open Board View. It presents the current semantic model in a fixed, classroom-scale surface with:
+Every mathematical and scientific workspace can open Board View. It presents the current semantic model in a fixed, classroom-scale surface with:
 
 - large aligned mathematical representations
 - one explicit exit
@@ -286,7 +355,7 @@ Every mathematical workspace can open Board View. It presents the current semant
 - answer hide/reveal
 - a short board annotation
 
-Board state is part of the open workspace state, not a duplicate learner record. Exiting returns to the same mathematical workspace.
+Science Board View also supports enlarged organisms, hidden/revealed names, whole-class sorting, branching keys, habitat windows, and change chains. Board state is not a duplicate learner record; exiting restores the exact pre-Board mathematical or scientific state.
 
 The Teacher Key Room has a separate full-screen Today’s Key display. It contains only the code, an optional title, and one return control.
 
@@ -294,7 +363,7 @@ The Teacher Key Room has a separate full-screen Today’s Key display. It contai
 
 Profiles require only a first name, nickname, or initials; a symbol; a pattern; and a locally generated ID. No online account is used.
 
-Build 2 deliberately retains IndexedDB database `our-planet` at schema version 3. Number Expedition reuses the existing stores:
+Build 3 deliberately retains IndexedDB database `our-planet` at schema version 3. Living Things Observatory reuses the existing stores:
 
 - `profiles`
 - `keyGrants`
@@ -305,7 +374,7 @@ Build 2 deliberately retains IndexedDB database `our-planet` at schema version 3
 - `activityState`
 - `metadata`
 
-No Build 1 store or field meaning is repurposed. Number Expedition state uses existing activity-state and artefact records; teacher favourites use metadata. Existing profiles, Atlas grants and work, Planet Question history, settings, wildcards, and backups remain compatible.
+No Build 1 or Build 2 store or field meaning is repurposed. Mathematics and science state use existing activity-state and artefact records; teacher favourites use metadata. Existing profiles, Atlas and Number Expedition grants/work, Planet Question history, settings, wildcards, and backups remain compatible. Science records add structured organism references, classification trees, habitats, change scenarios, survey data, seeds, and display preferences inside the established envelopes.
 
 Invalid imported or locally stored records are rejected, repaired where safe, or quarantined so one malformed record cannot break the learner space. If IndexedDB is unavailable, the same API falls back to memory for the current page session and reports that saving is not durable.
 
@@ -314,11 +383,12 @@ Invalid imported or locally stored records are rejected, repaired where safe, or
 The shared product supports:
 
 - Light, Core, Strong, and Intensive scaffold settings without changing the objective
-- concise visible instructions and mathematical invitations
-- spoken numbers and instructions through local speech synthesis
+- concise visible instructions and mathematical or scientific invitations
+- spoken numbers, organism names, and instructions through local speech synthesis
 - tap-to-hear support and visible alternatives
 - keyboard and touch operation
 - controls that do not require dragging
+- large organism diagrams, magnification, silhouettes, persistent rules, and visible question history
 - undo and redo in mathematical tools
 - stable place-value columns and tabular numerals
 - scalable text and high contrast
@@ -334,13 +404,13 @@ Scaffold settings change cue strength, modelling, and concurrent choices, not cu
 
 The Teacher Key Room generates one-card, cut-out card, environment-guide, Quick Key, and complete-guide output directly from manifest metadata.
 
-Number Expedition and My Work printing use semantic HTML and CSS rather than raster captures. Print rules target A4, remove interface controls, switch to monochrome-safe colours, preserve table and card boundaries, retain place-value and column alignment, and keep number-line geometry tied to its mathematical scale.
+Number Expedition, Living Things Observatory, and My Work printing use semantic HTML, local SVG, and CSS rather than remote captures. Print rules target A4, remove interface controls, switch to monochrome-safe colours, preserve organism labels and classification branches, retain place-value/column alignment, and keep number-line geometry tied to its mathematical scale.
 
 Important output must still be inspected in iPad Safari print preview before a release; automated CSS contract tests cannot detect every WebKit pagination or clipping issue.
 
 ## Offline and installation
 
-The production build injects every generated application asset—including the lazy Atlas and Number Expedition chunks—into the service-worker precache list.
+The production build injects every generated application asset—including the lazy Atlas, Number Expedition, and Living Things Observatory chunks—into the service-worker precache list.
 
 Update behaviour:
 
@@ -382,21 +452,23 @@ The application has no runtime server, cloud database, external AI, or live map 
 src/
   app/                                  application controller and route views
   components/                           shell, profile, keypad, print and modal components
-  data/                                 permanent product, curriculum, key and Number Expedition contracts
+  data/                                 permanent product, curriculum, keys, organisms, habitats and destination contracts
   destinations/planet-atlas/            Atlas engine and guided experience
   destinations/number-expedition/       mathematical field-station UI and Board View
+  destinations/living-things/           scientific observatory UI, Board View and print styling
   maths/                                shared mathematics, generator, feedback and validators
+  science/                              illustrations, binary questions, trees, generators and validators
   services/                             IndexedDB, profiles, keys, artefacts, backup, settings and offline services
   teacher/                              8584 session, manifest adapter, library, preferences, display and print
   styles/                               product, responsive and shared print styling
   utils/                                routing, safe DOM and formatting helpers
 public/                                 PWA manifest, icons and service worker
 scripts/                                production offline-asset injection
-tests/                                  contracts, services, mathematics, teacher room and UI integration
-docs/                                   architecture, testing, geography evidence and Build 3 handover
+tests/                                  contracts, services, mathematics, science, teacher room and UI integration
+docs/                                   architecture, testing, evidence, rights and build handovers
 ```
 
-See [Architecture](docs/ARCHITECTURE.md) for contracts and extension rules, [Testing](docs/TESTING.md) for the release matrix, and [Build 3 Handover](docs/BUILD-2-HANDOVER.md) for Living Things Observatory.
+See [Architecture](docs/ARCHITECTURE.md), [Living Things Technical Architecture](docs/SCIENCE-ARCHITECTURE.md), [Science Sources and Asset Rights](docs/SCIENCE-SOURCES.md), [Testing](docs/TESTING.md), and [Build 4 Handover](docs/BUILD-3-HANDOVER.md).
 
 ## GitHub Pages deployment
 
@@ -412,8 +484,6 @@ The product still does not expose a partial art activity. It retains the six-sta
 
 ## Next build
 
-Build 3 will activate **Living Things Observatory** using the same open-exploration, key, My Work, Teacher Key Room, accessibility, print, and offline architecture.
+Build 4 will activate **Climate Laboratory**. Build 3 prepares shared concept links for weather/climate, temperature, rainfall, seasonality, biomes, habitat consequences, environmental change, global warming, positive/negative values, and sourced observations. It does not expose a partial climate activity or claim that a single slider models a biome.
 
-It must preserve every released Build 1 and Build 2 ID, code, profile, grant, artefact, version, response, draft, preference, and wildcard.
-
-See [Build 3 Handover](docs/BUILD-2-HANDOVER.md).
+Build 4 must preserve every released Build 1–3 ID, code, profile, grant, artefact, version, response, draft, preference, source record, and wildcard. See [Build 4 Handover](docs/BUILD-3-HANDOVER.md).

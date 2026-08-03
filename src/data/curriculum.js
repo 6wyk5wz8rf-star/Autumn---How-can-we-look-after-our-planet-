@@ -1,4 +1,5 @@
 import { NUMBER_CURRICULUM_RECORDS } from './numberExpedition.js';
+import { SCIENCE_CURRICULUM_RECORDS } from './livingThings.js';
 
 /**
  * Central curriculum contract for the complete ten-build product.
@@ -367,7 +368,7 @@ const geographyRecords = [
   }),
 ];
 
-const scienceRecords = [
+const legacyScienceRecords = [
   curriculumRecord({
     id: 'sci-grouping-living-things',
     subject: 'science',
@@ -411,6 +412,8 @@ const scienceRecords = [
     crossCurricularConnections: ['climate-zones', 'materials', 'cause-and-effect'],
   }),
 ];
+
+const scienceRecords = SCIENCE_CURRICULUM_RECORDS.map(curriculumRecord);
 
 const mathematicsRecords = NUMBER_CURRICULUM_RECORDS.map(curriculumRecord);
 

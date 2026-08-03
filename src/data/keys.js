@@ -5,6 +5,11 @@ import {
   NUMBER_DESTINATION_KEY,
   NUMBER_EXPEDITION_ACTIVITIES,
 } from './numberExpedition.js';
+import {
+  LIVING_THINGS_ACTIVITIES,
+  SCIENCE_COLLECTIONS,
+  SCIENCE_DESTINATION_KEY,
+} from './livingThings.js';
 import { parseRoute } from '../utils/router.js';
 
 /**
@@ -30,7 +35,11 @@ const activityGrant = (activityIds, includeFuture = false, destinationId = 'plan
   includeFuture,
 });
 
-const activityKey = ({ code, id, activityId, title, description, curriculumTags, outcome, quickUse = true, destinationId = 'planet-atlas' }) => ({
+const activityKey = ({
+  code, id, activityId, title, description, curriculumTags, curriculumStrand,
+  outcome, quickUse = true, destinationId = 'planet-atlas',
+  boardViewSuitable = false, approximateMinutes = null,
+}) => ({
   code,
   id,
   type: KEY_TYPES.ACTIVITY,
@@ -44,15 +53,22 @@ const activityKey = ({ code, id, activityId, title, description, curriculumTags,
   childFacingTitle: title,
   description,
   curriculumTags,
+  curriculumStrand,
   savedOutcomeType: outcome,
   active: true,
   printGuide: {
-    group: 'Planet Atlas activities',
+    group: destinationId === 'number-expedition'
+      ? 'Number Expedition activities'
+      : destinationId === 'living-things-observatory'
+        ? 'Living Things Observatory activities'
+        : 'Planet Atlas activities',
     quickUse,
     purpose: description,
     usefulMoments: ['encounter', 'during-teaching', 'after-teaching', 'revisit'],
     expectedOutcome: outcome,
     displayCard: true,
+    boardViewSuitable,
+    approximateMinutes,
   },
 });
 
@@ -373,6 +389,85 @@ const NUMBER_DESTINATION_MANIFEST_KEY = {
   },
 };
 
+const SCIENCE_ACTIVITY_KEYS = LIVING_THINGS_ACTIVITIES.map((activity) => activityKey({
+  code: activity.keyCode,
+  id: `key-science-${activity.id}`,
+  activityId: activity.id,
+  title: activity.title,
+  description: activity.curriculumObjective,
+  curriculumTags: activity.curriculumTags,
+  curriculumStrand: activity.curriculumStrand,
+  outcome: activity.outcome.artefactTypeId,
+  quickUse: [1, 3, 5, 8, 10, 13, 15].includes(activity.order),
+  destinationId: 'living-things-observatory',
+  boardViewSuitable: activity.boardViewSuitable,
+  approximateMinutes: activity.approximateMinutes,
+})).map((key, index) => Object.freeze({
+  ...key,
+  teacherQuickUse: [1, 3, 5, 8, 10, 13, 15].includes(index + 1),
+  scale: 'Activity',
+}));
+
+const SCIENCE_COLLECTION_KEYS = SCIENCE_COLLECTIONS.map((collection) => ({
+  code: collection.code,
+  id: `key-${collection.id}`,
+  type: KEY_TYPES.COLLECTION,
+  scale: 'Collection',
+  destinationId: 'living-things-observatory',
+  destination: 'living-things-observatory',
+  activityIds: collection.activityIds,
+  permissionsGranted: collection.activityIds.map((id) => `activity:${id}`),
+  grants: [activityGrant(collection.activityIds, false, 'living-things-observatory')],
+  route: '#/keys',
+  title: collection.title,
+  childFacingTitle: collection.title,
+  description: collection.description,
+  curriculumTags: ['science', 'year-4', 'living-things', collection.id],
+  curriculumStrand: collection.title,
+  savedOutcomeType: null,
+  active: true,
+  printGuide: {
+    group: 'Living Things Observatory collections',
+    quickUse: true,
+    purpose: collection.description,
+    usefulMoments: ['first encounter', 'during teaching', 'after teaching', 'revisit'],
+    expectedOutcome: `${collection.activityIds.length} revisable scientific pathways`,
+    displayCard: true,
+    boardViewSuitable: true,
+    approximateMinutes: collection.activityIds.length * 15,
+  },
+}));
+
+const SCIENCE_DESTINATION_MANIFEST_KEY = {
+  code: SCIENCE_DESTINATION_KEY.code,
+  id: SCIENCE_DESTINATION_KEY.id,
+  type: KEY_TYPES.DESTINATION,
+  scale: 'Environment',
+  destinationId: 'living-things-observatory',
+  destination: 'living-things-observatory',
+  activityIds: [],
+  permissionsGranted: ['destination:living-things-observatory:*'],
+  grants: [activityGrant(['*'], true, 'living-things-observatory')],
+  route: '#/living-things',
+  title: SCIENCE_DESTINATION_KEY.title,
+  childFacingTitle: SCIENCE_DESTINATION_KEY.title,
+  description: SCIENCE_DESTINATION_KEY.description,
+  curriculumTags: ['living-things-observatory', 'science', 'year-4', 'living-things'],
+  curriculumStrand: 'Living things and their habitats',
+  savedOutcomeType: null,
+  active: true,
+  printGuide: {
+    group: 'Living Things Observatory collections',
+    quickUse: false,
+    purpose: SCIENCE_DESTINATION_KEY.description,
+    usefulMoments: ['revisit'],
+    expectedOutcome: 'All Living Things Observatory pathways in My Keys',
+    displayCard: true,
+    boardViewSuitable: true,
+    approximateMinutes: null,
+  },
+};
+
 export const TEACHER_KEY_CODE = '8584';
 
 const TEACHER_KEY = {
@@ -426,6 +521,9 @@ export const KEY_MANIFEST = Object.freeze([
   ...NUMBER_ACTIVITY_KEYS,
   ...NUMBER_COLLECTION_KEYS,
   NUMBER_DESTINATION_MANIFEST_KEY,
+  ...SCIENCE_ACTIVITY_KEYS,
+  ...SCIENCE_COLLECTION_KEYS,
+  SCIENCE_DESTINATION_MANIFEST_KEY,
   TEACHER_KEY,
 ]);
 
@@ -574,10 +672,15 @@ export function validateKeyManifest(
     if (!key.route || typeof key.route !== 'string') errors.push(`Key ${label} needs a route.`);
     if (typeof key.route === 'string') {
       const parsed = parseRoute(key.route);
+      const destinationRoute = ({
+        'planet-atlas': 'atlas',
+        'number-expedition': 'numbers',
+        'living-things-observatory': 'living-things',
+      })[key.destinationId];
       const expectedRoute = ({
         [KEY_TYPES.ACTIVITY]: 'activity',
         [KEY_TYPES.COLLECTION]: 'keys',
-        [KEY_TYPES.DESTINATION]: key.destinationId === 'number-expedition' ? 'numbers' : 'atlas',
+        [KEY_TYPES.DESTINATION]: destinationRoute,
         [KEY_TYPES.WORLD]: 'home',
         [KEY_TYPES.MAINTENANCE]: 'maintenance',
       })[key.type];
