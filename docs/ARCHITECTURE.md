@@ -328,6 +328,8 @@ Vite emits content-hashed chunks. `scripts/inject-sw-assets.mjs` scans `dist`, e
 
 This includes the dynamically imported Atlas and Number Expedition chunks. A learner can therefore install from the home world and later open either environment offline.
 
+The deployment workflow serialises against the repository's remaining legacy branch Pages publisher, then deploys the built artefact last. This prevents the branch job from overwriting `dist` with raw source while retaining a clean migration path to a GitHub-Actions-only Pages source setting.
+
 The worker waits rather than replacing an active build mid-session. Cache cleanup is scoped to this repository. IndexedDB is independent of CacheStorage and is not erased by deployment or worker activation.
 
 ## Print architecture

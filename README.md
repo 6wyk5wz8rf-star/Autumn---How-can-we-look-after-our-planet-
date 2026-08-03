@@ -402,6 +402,8 @@ See [Architecture](docs/ARCHITECTURE.md) for contracts and extension rules, [Tes
 
 `.github/workflows/deploy.yml` runs on pushes to `main`: it installs exact dependencies, runs the test suite, builds the production app, injects offline assets, uploads `dist`, and deploys through GitHub Pages Actions.
 
+The repository still has a legacy branch publisher registered in GitHub Pages settings. The deploy job therefore waits for that publisher to settle and publishes the verified `dist` artefact last, preventing raw Vite source from replacing the built application. The preferred permanent repository setting is **Settings → Pages → Source → GitHub Actions**; the wait remains safe if that setting is changed later.
+
 The Vite base is relative, so hashed assets, the manifest, worker, and hash routes remain valid beneath the repository’s Pages path.
 
 ## Tides of Change preparation
