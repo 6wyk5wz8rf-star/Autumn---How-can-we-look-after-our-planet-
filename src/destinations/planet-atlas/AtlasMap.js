@@ -346,19 +346,18 @@ export class AtlasMap {
     const root = document.createElement('section');
     root.className = 'atlas-map';
     root.dataset.view = this.state.view;
+    root.dataset.guided = String(Boolean(this.options.guided));
+    const guided = Boolean(this.options.guided);
     root.innerHTML = `
-      <header class="atlas-map__header">
+      <header class="sr-only">
         <div>
           <p class="atlas-map__eyebrow">Our Planet · Geographical studio</p>
           <h2 class="atlas-map__title"></h2>
           <p class="atlas-map__intro"></p>
         </div>
-        <button class="atlas-icon-button" type="button" data-action="speak-place" aria-label="Hear the current place name">
-          <span aria-hidden="true">◖</span><span>Hear place</span>
-        </button>
       </header>
 
-      <nav class="atlas-map__trail" aria-label="Location trail">
+      ${guided ? '' : `<nav class="atlas-map__trail" aria-label="Location trail">
         <button type="button" data-focus="world">Earth</button>
         <span aria-hidden="true">›</span>
         <button type="button" data-focus="africa">Africa</button>
@@ -366,34 +365,35 @@ export class AtlasMap {
         <button type="button" data-focus="westAfrica">West Africa</button>
         <span aria-hidden="true">›</span>
         <button type="button" data-focus="gambia">The Gambia</button>
-      </nav>
+      </nav>`}
 
       <div class="atlas-map__controls" aria-label="Map controls">
         <div class="atlas-control-group" role="group" aria-label="Map form">
           <button type="button" data-view="globe">Globe</button>
           <button type="button" data-view="flat">Flat map</button>
         </div>
-        <div class="atlas-control-group" role="group" aria-label="Map layers">
-          <button type="button" data-action="toggle-labels">Labels</button>
-          <button type="button" data-action="toggle-equator">Equator</button>
-          <button type="button" data-action="toggle-oceans">Oceans</button>
-          <button type="button" data-action="toggle-climate">Climate guides</button>
-        </div>
+        ${guided ? '' : `<details class="atlas-layer-menu">
+          <summary>Layers</summary>
+          <div class="atlas-control-group" role="group" aria-label="Map layers">
+            <button type="button" data-action="toggle-labels">Labels</button>
+            <button type="button" data-action="toggle-equator">Equator</button>
+            <button type="button" data-action="toggle-oceans">Oceans</button>
+            <button type="button" data-action="toggle-climate">Climate</button>
+          </div>
+        </details>`}
         <div class="atlas-control-group" role="group" aria-label="Map scale">
           <button type="button" data-action="zoom-out" aria-label="Zoom out">−</button>
           <output class="atlas-map__zoom" aria-live="off">1×</output>
           <button type="button" data-action="zoom-in" aria-label="Zoom in">+</button>
-          <button type="button" data-action="reset-view">Reset view</button>
         </div>
       </div>
 
-      <div class="atlas-map__tools" role="group" aria-label="Map tool">
-        <span class="atlas-map__tools-label">Use the map</span>
-        <button type="button" data-tool="explore">Move & inspect</button>
-        <button type="button" data-tool="marker">Place markers</button>
-        <button type="button" data-tool="journey">Journey Thread</button>
-        <button type="button" data-action="compare">Compare UK + The Gambia</button>
-      </div>
+      ${guided ? '' : `<div class="atlas-map__tools" role="group" aria-label="Map tool">
+        <button type="button" data-tool="explore">Move</button>
+        <button type="button" data-tool="marker">Mark</button>
+        <button type="button" data-tool="journey">Journey</button>
+        <button type="button" data-action="compare">Compare</button>
+      </div>`}
 
       <div class="atlas-map__stage-wrap">
         <svg
@@ -453,9 +453,8 @@ export class AtlasMap {
 
       <div class="atlas-map__status-grid">
         <section class="atlas-place-card" aria-labelledby="${this._instanceId}-place-title">
-          <p class="atlas-map__eyebrow">Current view</p>
-          <h3 id="${this._instanceId}-place-title" data-place-title></h3>
-          <p data-place-description></p>
+          <div><p class="atlas-map__eyebrow">Current view</p><h3 id="${this._instanceId}-place-title" data-place-title></h3><p data-place-description></p></div>
+          <button class="atlas-icon-button" type="button" data-action="speak-place" aria-label="Hear the current place name"><span aria-hidden="true">◖</span><span>Hear</span></button>
         </section>
         <section class="atlas-journey-card" data-journey-panel hidden aria-labelledby="${this._instanceId}-journey-title">
           <p class="atlas-map__eyebrow">Journey Thread</p>
@@ -476,25 +475,11 @@ export class AtlasMap {
         </section>
       </div>
 
-      <details class="atlas-coordinate-tools">
-        <summary>Place without dragging</summary>
-        <p>Enter a longitude and latitude, or use the centre of the map.</p>
-        <div class="atlas-coordinate-tools__fields">
-          <label>Longitude <input type="number" min="-180" max="180" step="0.1" value="0" data-coordinate="longitude"></label>
-          <label>Latitude <input type="number" min="-90" max="90" step="0.1" value="0" data-coordinate="latitude"></label>
-        </div>
-        <div class="atlas-coordinate-tools__actions">
-          <button type="button" data-action="coordinate-marker">Place marker</button>
-          <button type="button" data-action="coordinate-journey">Add Journey point</button>
-          <button type="button" data-action="centre-marker">Mark map centre</button>
-        </div>
-      </details>
-
       <footer class="atlas-map__footer">
         <p class="atlas-map__attribution"></p>
         <div class="atlas-map__footer-actions">
           <button type="button" data-action="clear-markers">Clear markers</button>
-          <button type="button" data-action="snapshot">Save exploration snapshot</button>
+          ${typeof this.options.onSnapshot === 'function' ? '<button type="button" data-action="snapshot">Save view</button>' : ''}
         </div>
       </footer>
       <p class="atlas-map__live" aria-live="polite" aria-atomic="true"></p>
@@ -573,16 +558,12 @@ export class AtlasMap {
       'toggle-climate': () => this.setLayer('climate', !this.state.climate),
       'zoom-in': () => this.zoomBy(1.3),
       'zoom-out': () => this.zoomBy(1 / 1.3),
-      'reset-view': () => this.focusPlace(this.state.focus || 'world'),
       compare: () => this.comparePlaces('uk', 'gambia'),
       'close-comparison': () => this.clearComparison(),
       'clear-markers': () => this.clearMarkers(),
       'clear-journey': () => this.clearJourney(),
       snapshot: () => this.saveSnapshot(),
       'speak-place': () => this.speakCurrentPlace(),
-      'coordinate-marker': () => this._addCoordinateFromInputs('marker'),
-      'coordinate-journey': () => this._addCoordinateFromInputs('journey'),
-      'centre-marker': () => this._addAtMapCentre('marker'),
     };
     actions[actionButton.dataset.action]?.();
   }
@@ -1147,6 +1128,11 @@ export class AtlasMap {
       button?.setAttribute('aria-pressed', String(active));
       button?.classList.toggle('is-active', active);
     });
+    const visibleLayerCount = Object.values(layerState).filter(Boolean).length;
+    const layerSummary = this.root.querySelector('.atlas-layer-menu summary');
+    if (layerSummary) layerSummary.textContent = visibleLayerCount ? `Layers · ${visibleLayerCount}` : 'Layers';
+    const clearMarkers = this.root.querySelector('[data-action="clear-markers"]');
+    if (clearMarkers) clearMarkers.hidden = this.state.markers.length === 0;
     const climateKey = this.root.querySelector('[data-climate-key]');
     if (climateKey) climateKey.hidden = !this.state.climate;
     this.root.querySelectorAll('[data-biome]').forEach((button) => {
@@ -1345,23 +1331,6 @@ export class AtlasMap {
     const detail = { reason, state: this.getState() };
     this.options.onChange?.(detail.state, reason);
     this.root.dispatchEvent(new CustomEvent('atlas:change', { detail, bubbles: true }));
-  }
-
-  _addCoordinateFromInputs(kind) {
-    const longitude = Number(
-      this.root.querySelector('[data-coordinate="longitude"]').value,
-    );
-    const latitude = Number(this.root.querySelector('[data-coordinate="latitude"]').value);
-    if (!finiteCoordinate([longitude, latitude])) {
-      this._announce('Enter a longitude and latitude using numbers.');
-      return;
-    }
-    if (longitude < -180 || longitude > 180 || latitude < -90 || latitude > 90) {
-      this._announce('Longitude must be between −180 and 180. Latitude must be between −90 and 90.');
-      return;
-    }
-    if (kind === 'journey') this.addJourneyPoint([longitude, latitude]);
-    else this.addMarker([longitude, latitude]);
   }
 
   _addAtMapCentre(kind) {

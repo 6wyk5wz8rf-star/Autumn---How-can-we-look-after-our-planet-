@@ -277,7 +277,6 @@ export const KEY_MANIFEST = Object.freeze([
         'add-key-to-device-profiles',
         'reset-profile-keys',
         'clear-profile-work',
-        'reset-demonstration-data',
         'clear-all-local-data',
       ],
     }],

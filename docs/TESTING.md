@@ -80,7 +80,8 @@ Use the generated Key Guide, not copied documentation.
 
 For each activity:
 
-- move freely between Notice, Explore, Make, Explain, and Revisit
+- move forward and back through Look & explore, Make & explain, and Save & revisit
+- confirm the five learning moments remain present inside those three stages
 - confirm text and map state survive moving between stages
 - refresh mid-activity and confirm the unfinished state returns
 - test touch and keyboard alternatives

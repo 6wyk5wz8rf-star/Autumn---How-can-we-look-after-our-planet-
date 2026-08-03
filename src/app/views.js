@@ -1,6 +1,7 @@
 import { escapeAttr, escapeHTML } from '../utils/dom.js';
 import { formatDate, formatDateTime, humanise, truncate } from '../utils/format.js';
 import { renderKeypad } from '../components/Keypad.js';
+import { profileSymbolIcon } from '../components/ProfileGate.js';
 
 const artefactSymbols = {
   'exploration-snapshot': '◎',
@@ -13,6 +14,13 @@ const artefactSymbols = {
   'place-portrait': '▱',
   'planet-question-response': '◉',
 };
+
+const outcomeTemplatesWithExplanation = new Set([
+  'place-pin',
+  'climate-pattern-observation',
+  'journey-thread',
+  'planet-question-response',
+]);
 
 function safeSvgDataUrl(markup) {
   const value = String(markup || '').trim();
@@ -34,6 +42,7 @@ function displayContentEntries(content) {
   const hidden = new Set([
     'activityId', 'mapState', 'viewState', 'route', 'routes', 'markers', 'visibleLayers',
     'comparison', 'attribution', 'startedAt', 'savedAt', 'outcomeSchemaVersion', 'step',
+    'workflowVersion',
   ]);
   return Object.entries(content).flatMap(([key, value]) => {
     if (hidden.has(key) || value === '' || value == null) return [];
@@ -106,9 +115,8 @@ export function renderHomeView({ profile, recentActivity, workCount = 0 }) {
       <div class="world-intro">
         <p class="eyebrow">${greeting}</p>
         <h1 id="home-title">How can we look after our planet?</h1>
-        <p class="lede">Begin with a place. Move the map, follow a question and notice what changes when you look more closely.</p>
+        <p class="lede">Begin with a place. Look closely. Follow what you notice.</p>
         <div class="cluster no-print">
-          <button class="button" type="button" data-route="atlas">Explore Planet Atlas <span aria-hidden="true">→</span></button>
           <button class="button secondary" type="button" data-route="key">Enter today’s key</button>
         </div>
       </div>
@@ -136,38 +144,14 @@ export function renderAtlasView() {
       <div>
         <p class="eyebrow">Open exploration · no key needed</p>
         <h1 id="atlas-title">Planet Atlas</h1>
-        <p class="lede">Turn Earth, flatten the map, draw a journey or move in close. The map stays at the centre.</p>
-      </div>
-      <div class="cluster no-print">
-        <button class="button secondary" type="button" data-route="key">Enter a Key</button>
-        <button class="button" type="button" data-action="save-atlas-snapshot">Save this view</button>
+        <p class="lede">Turn Earth, move closer and follow what you notice.</p>
       </div>
     </div>
-    <div class="atlas-layout">
-      <div id="atlas-map" aria-busy="true"></div>
-      <aside class="atlas-side paper-panel panel-pad no-print" data-complexity="extra">
-        <p class="eyebrow">Ways into the map</p>
-        <div class="stack">
-          <button class="choice-card" type="button" data-atlas-focus="world">
-            <strong>Begin with Earth</strong><span>See the whole planet before moving closer.</span>
-          </button>
-          <button class="choice-card" type="button" data-atlas-focus="africa">
-            <strong>Locate Africa</strong><span>Use the oceans and nearby continents.</span>
-          </button>
-          <button class="choice-card" type="button" data-atlas-focus="gambia">
-            <strong>Find The Gambia</strong><span>Keep your bearings from world to country.</span>
-          </button>
-          <button class="choice-card" type="button" data-atlas-mode="compare">
-            <strong>Compare two places</strong><span>Place the United Kingdom and The Gambia side by side.</span>
-          </button>
-        </div>
-        <hr class="rule" />
-        <label class="stack" style="gap:.4rem">
-          <strong>My geographical question</strong>
-          <textarea id="atlas-question" maxlength="280" placeholder="What are you wondering about this place?"></textarea>
-        </label>
-        <button class="button tonal" type="button" data-action="save-atlas-question">Save the question with this view</button>
-      </aside>
+    <div id="atlas-map" aria-busy="true"></div>
+    <div class="atlas-save-strip no-print">
+      <label for="atlas-question"><strong>What are you wondering?</strong><span class="small muted"> Optional</span></label>
+      <textarea id="atlas-question" maxlength="280" rows="2" placeholder="Add a question to this view…"></textarea>
+      <button class="button" type="button" data-action="save-atlas-question">Save view</button>
     </div>
   </section>`;
 }
@@ -178,9 +162,9 @@ export function renderKeysView({ activities = [], access = [], artifacts = [] })
   return `<section class="page" aria-labelledby="keys-title">
     <div class="page-head">
       <div>
-        <p class="eyebrow">A remembered shelf, not a task list</p>
+        <p class="eyebrow">Paths you have opened</p>
         <h1 id="keys-title">My Keys</h1>
-        <p class="lede">Every key you use leaves a useful pathway here. Revisit one whenever it becomes useful.</p>
+        <p class="lede">Choose a pathway to continue or revisit.</p>
       </div>
       <button class="button" type="button" data-route="key">Enter a Key</button>
     </div>
@@ -200,7 +184,6 @@ export function renderKeysView({ activities = [], access = [], artifacts = [] })
           </div>
           <div class="cluster item-actions">
             <button class="button" type="button" data-route="activity" data-route-value="${escapeAttr(activity.id)}">${saved ? 'Revisit' : 'Open pathway'}</button>
-            ${saved ? `<button class="button secondary" type="button" data-route="work" data-route-value="${escapeAttr(saved.id)}">See my work</button>` : ''}
           </div>
         </article>`;
       }).join('')}
@@ -208,7 +191,7 @@ export function renderKeysView({ activities = [], access = [], artifacts = [] })
       <div>
         <div class="display-type" style="font-size:3rem;color:var(--mineral)" aria-hidden="true">⌘</div>
         <h2>Your key shelf is ready</h2>
-        <p class="muted">When your teacher shares a four-digit pathway, enter it here. Planet Atlas is already open to explore without one.</p>
+        <p class="muted">Enter a four-digit key, or explore Planet Atlas freely.</p>
         <div class="cluster" style="justify-content:center"><button class="button" type="button" data-route="key">Enter a Key</button><button class="button secondary" type="button" data-route="atlas">Explore the atlas</button></div>
       </div>
     </div>`}
@@ -221,13 +204,12 @@ export function renderKeyEntryView() {
       <div>
         <p class="eyebrow">A direct path through an open world</p>
         <h1 id="key-title">Enter a Key</h1>
-        <p class="lede" style="margin-inline:auto">Use the four digits your teacher has shared. The pathway will open and stay in My Keys for later.</p>
+        <p class="lede" style="margin-inline:auto">The pathway opens after the fourth digit.</p>
       </div>
     </div>
     <div class="paper-panel panel-pad" style="max-width:31rem;margin:0 auto">
       ${renderKeypad()}
     </div>
-    <p class="small muted" style="max-width:31rem;margin:1rem auto;text-align:center">A key guides you to one strong activity. You can explore Planet Atlas without a key at any time.</p>
   </section>`;
 }
 
@@ -238,19 +220,20 @@ export function renderWorkView({ artifacts = [], responses = [], activeFilter = 
     ['journey', 'Journeys'],
     ['explanation', 'Explanations'],
   ];
-  const visible = activeFilter === 'all' ? artifacts : artifacts.filter((artifact) => {
+  const showFilters = artifacts.length >= 6;
+  const effectiveFilter = showFilters ? activeFilter : 'all';
+  const visible = effectiveFilter === 'all' ? artifacts : artifacts.filter((artifact) => {
     const haystack = [artifact.type, artifact.artefactType, ...(artifact.tags || []), ...(artifact.curriculumTags || [])].join(' ').toLowerCase();
-    return haystack.includes(activeFilter);
+    return haystack.includes(effectiveFilter);
   });
   const artifactById = new Map(artifacts.map((artifact) => [artifact.id, artifact]));
   return `<section class="page" aria-labelledby="work-title">
     <div class="page-head">
       <div>
-        <p class="eyebrow">Creations, investigations and changing ideas</p>
+        <p class="eyebrow">Saved ideas and creations</p>
         <h1 id="work-title">My Work</h1>
-        <p class="lede">Everything you save lives together here. Open an earlier idea, keep the original and make a new version.</p>
+        <p class="lede">Open something to revisit it without losing the original.</p>
       </div>
-      <button class="button secondary" type="button" data-action="open-planet-question">Answer the Planet Question</button>
     </div>
     <section class="paper-panel panel-pad" aria-labelledby="planet-question-heading">
       <div class="spread">
@@ -273,10 +256,8 @@ export function renderWorkView({ artifacts = [], responses = [], activeFilter = 
         </article>`).join('')}
       </div>` : '<p class="muted">There is no expected answer. Add a thought when something has changed, connected or made you wonder.</p>'}
     </section>
-    <div class="spread" style="margin:1.4rem 0 .8rem">
-      <div class="segmented no-print" role="group" aria-label="Filter saved work">
-        ${filters.map(([id, label]) => `<button type="button" data-work-filter="${id}" aria-pressed="${activeFilter === id}">${label}</button>`).join('')}
-      </div>
+    <div class="spread work-shelf-heading">
+      ${showFilters ? `<div class="segmented no-print" role="group" aria-label="Filter saved work">${filters.map(([id, label]) => `<button type="button" data-work-filter="${id}" aria-pressed="${effectiveFilter === id}">${label}</button>`).join('')}</div>` : '<span></span>'}
       <span class="small muted">${artifacts.length} saved ${artifacts.length === 1 ? 'piece' : 'pieces'}</span>
     </div>
     ${visible.length ? `<div class="work-shelf">
@@ -303,7 +284,6 @@ export function renderArtifactCard(artifact) {
     <div class="work-meta"><span>Saved ${formatDate(artifact.updatedAt || artifact.createdAt, { year: true })}</span><span>${artifact.versions?.length || artifact.versionHistory?.length || 1} ${((artifact.versions?.length || artifact.versionHistory?.length || 1) === 1) ? 'version' : 'versions'}</span></div>
     <div class="cluster item-actions">
       <button class="button" type="button" data-route="work" data-route-value="${escapeAttr(artifact.id)}">Open</button>
-      <button class="button secondary" type="button" data-action="duplicate-artifact" data-artifact-id="${escapeAttr(artifact.id)}">Duplicate</button>
     </div>
   </article>`;
 }
@@ -313,8 +293,8 @@ export function renderWorkDetailView(artifact) {
   const type = artifact.type || artifact.artefactType || 'saved-work';
   const content = artifact.content || {};
   const versions = artifact.versions || artifact.versionHistory || [];
-  const entries = displayContentEntries(content);
   const outcomeTemplate = renderOutcomeTemplate(type, content);
+  const entries = outcomeTemplate ? [] : displayContentEntries(content);
   return `<article class="page" aria-labelledby="work-detail-title">
     <div class="page-head">
       <div>
@@ -334,18 +314,21 @@ export function renderWorkDetailView(artifact) {
         </div>
         ${outcomeTemplate}
         ${entries.length ? `<dl class="stack">${entries.map(([key, value]) => `<div><dt class="eyebrow">${escapeHTML(humanise(key))}</dt><dd style="margin:0">${escapeHTML(value)}</dd></div>`).join('')}</dl>` : '<p class="muted">This piece stores a visual map state. Reopen the activity to explore it again.</p>'}
-        ${artifact.explanation ? `<div><p class="eyebrow">My explanation</p><p>${escapeHTML(artifact.explanation)}</p></div>` : ''}
+        ${artifact.explanation && !outcomeTemplatesWithExplanation.has(type) ? `<div><p class="eyebrow">My explanation</p><p>${escapeHTML(artifact.explanation)}</p></div>` : ''}
         ${artifact.voicePlaybackUrl ? `<div class="voice-playback"><p class="eyebrow">My voice explanation</p><audio controls preload="metadata" src="${escapeAttr(artifact.voicePlaybackUrl)}" aria-label="Play my saved voice explanation"></audio><p class="small muted">Use the controls to replay or change the volume. The written explanation remains visible when one was added.</p></div>` : ''}
         ${artifact.reflection ? `<div class="feedback-note"><strong>Reflection</strong><p>${escapeHTML(artifact.reflection)}</p></div>` : ''}
       </section>
       <aside class="paper-panel panel-pad stack no-print">
-        <div><p class="eyebrow">Keep developing this</p><h2 style="font-size:1.6rem">Revisit without losing the original</h2></div>
         <button class="button" type="button" data-action="revise-artifact" data-artifact-id="${escapeAttr(artifact.id)}">Make a new version</button>
-        <button class="button secondary" type="button" data-action="duplicate-artifact" data-artifact-id="${escapeAttr(artifact.id)}">Duplicate as a separate piece</button>
-        <button class="button secondary" type="button" data-action="add-reflection" data-artifact-id="${escapeAttr(artifact.id)}">Add a reflection</button>
         ${versions.length > 1 ? `<button class="button secondary" type="button" data-action="compare-versions" data-artifact-id="${escapeAttr(artifact.id)}">Compare ${versions.length} versions</button>` : ''}
-        <hr class="rule" />
-        <button class="text-button" type="button" data-action="confirm-delete-artifact" data-artifact-id="${escapeAttr(artifact.id)}">Delete this piece…</button>
+        <details class="work-more-actions">
+          <summary>More options</summary>
+          <div class="stack">
+            <button class="button secondary" type="button" data-action="add-reflection" data-artifact-id="${escapeAttr(artifact.id)}">Add a reflection</button>
+            <button class="button secondary" type="button" data-action="duplicate-artifact" data-artifact-id="${escapeAttr(artifact.id)}">Make a separate copy</button>
+            <button class="text-button" type="button" data-action="confirm-delete-artifact" data-artifact-id="${escapeAttr(artifact.id)}">Delete this piece…</button>
+          </div>
+        </details>
       </aside>
     </div>
   </article>`;
@@ -354,7 +337,7 @@ export function renderWorkDetailView(artifact) {
 export function renderSettingsView({ settings }) {
   const scaffold = settings.scaffold || 'core';
   return `<section class="page" aria-labelledby="settings-title">
-    <div class="page-head"><div><p class="eyebrow">Make the world comfortable to use</p><h1 id="settings-title">Accessibility & support</h1><p class="lede">These choices belong to this learner. They change access—not the importance of the ideas.</p></div></div>
+    <div class="page-head"><div><p class="eyebrow">This learner’s choices</p><h1 id="settings-title">Accessibility & support</h1></div></div>
     <div class="two-column">
       <section class="paper-panel panel-pad">
         ${settingRow('Text size', 'Choose a comfortable reading size.', 'text-size', [['normal', 'Standard'], ['large', 'Large'], ['largest', 'Largest']], settings.textSize || 'normal')}
@@ -379,12 +362,11 @@ function settingRow(title, description, name, choices, current) {
 
 export function renderMaintenanceView({ profiles = [] }) {
   return `<section class="page" aria-labelledby="maintenance-title">
-    <div class="page-head"><div><p class="eyebrow">Adult utility · local device only</p><h1 id="maintenance-title">Prepare, print & protect</h1><p class="lede">A small set of adult tools. There are no assignments, deadlines or marking queues here.</p></div></div>
+    <div class="page-head"><div><p class="eyebrow">Adult utility · this device</p><h1 id="maintenance-title">Prepare, print & protect</h1><p class="lede">Print keys and protect work on this iPad.</p></div></div>
     <div class="content-grid">
-      <section class="paper-panel panel-pad stack"><div><p class="eyebrow">Keys</p><h2 style="font-size:1.6rem">Teacher Key Guide</h2><p class="muted">Generated from the permanent manifest so the printed codes and the application cannot drift apart.</p></div><button class="button" type="button" data-route="print" data-route-value="key-guide">Open printable guide</button><button class="button secondary" type="button" data-action="add-key-to-all">Add one key to all ${profiles.length} local ${profiles.length === 1 ? 'profile' : 'profiles'}</button></section>
-      <section class="paper-panel panel-pad stack"><div><p class="eyebrow">Backup</p><h2 style="font-size:1.6rem">Move or protect local work</h2><p class="muted">Export profiles, keys, work and Planet Question history as one device backup.</p></div><button class="button" type="button" data-action="export-backup">Export backup</button><button class="button secondary" type="button" data-action="choose-backup-file">Import backup</button><input class="sr-only" id="backup-file" type="file" accept="application/json,.json" tabindex="-1" /></section>
-      <section class="paper-panel panel-pad stack"><div><p class="eyebrow">Profiles on this device</p><h2 style="font-size:1.6rem">Inspect without tracking</h2></div>${profiles.map((profile) => `<div class="spread"><span><span aria-hidden="true">${escapeHTML(profile.symbol || '◉')}</span> ${escapeHTML(profile.displayName || profile.name)}</span><button class="text-button" type="button" data-action="profile-tools" data-profile-id="${escapeAttr(profile.id)}">Manage…</button></div>`).join('') || '<p class="muted">No profiles yet.</p>'}</section>
-      <section class="paper-panel panel-pad stack"><div><p class="eyebrow">Separate destructive actions</p><h2 style="font-size:1.6rem">Reset carefully</h2><p class="muted">Each action explains exactly what it removes and asks again before changing anything.</p></div><button class="button danger" type="button" data-action="confirm-reset-demo">Reset demonstration data…</button><button class="button danger" type="button" data-action="confirm-clear-all">Clear every local profile and piece of work…</button></section>
+      <section class="paper-panel panel-pad stack"><div><p class="eyebrow">Keys</p><h2 style="font-size:1.6rem">Teacher Key Guide</h2></div><button class="button" type="button" data-route="print" data-route-value="key-guide">Open printable guide</button><button class="button secondary" type="button" data-action="add-key-to-all">Add one key to all ${profiles.length} local ${profiles.length === 1 ? 'profile' : 'profiles'}</button></section>
+      <section class="paper-panel panel-pad stack"><div><p class="eyebrow">Backup</p><h2 style="font-size:1.6rem">Protect local work</h2></div><button class="button" type="button" data-action="export-backup">Export backup</button><button class="button secondary" type="button" data-action="choose-backup-file">Import backup</button><input class="sr-only" id="backup-file" type="file" accept="application/json,.json" tabindex="-1" /></section>
+      <section class="paper-panel panel-pad stack"><div><p class="eyebrow">This device</p><h2 style="font-size:1.6rem">Learner spaces</h2></div>${profiles.map((profile) => `<div class="spread"><span><span aria-hidden="true">${escapeHTML(profileSymbolIcon(profile.symbol))}</span> ${escapeHTML(profile.displayName || profile.name)}</span><button class="text-button" type="button" data-action="profile-tools" data-profile-id="${escapeAttr(profile.id)}">Manage…</button></div>`).join('') || '<p class="muted">No profiles yet.</p>'}<details class="work-more-actions"><summary>Device data options</summary><div class="stack"><p class="small muted">This action explains exactly what it removes and asks again.</p><button class="button danger" type="button" data-action="confirm-clear-all">Clear every local profile and piece of work…</button></div></details></section>
     </div>
   </section>`;
 }
@@ -400,7 +382,7 @@ export function renderGlossary(glossary = []) {
 }
 
 export function renderPlanetQuestionModal({ artifacts = [] }) {
-  return `<div class="modal-backdrop" data-modal="planet-question"><section class="modal wide" role="dialog" aria-modal="true" aria-labelledby="planet-response-title"><div class="modal-head"><div><p class="eyebrow">What I think now</p><h2 id="planet-response-title">How can we look after our planet?</h2></div><button class="icon-button" type="button" data-action="close-modal" aria-label="Close">×</button></div><form class="modal-body stack" id="planet-question-form"><p class="muted">There is no single expected answer. Use a sentence, your voice or evidence from something you made.</p><label class="stack" style="gap:.4rem"><strong>My idea</strong><textarea name="text" maxlength="700" placeholder="I think… because…"></textarea></label><div class="two-field-grid"><label class="stack" style="gap:.4rem"><strong>What changed my thinking <span class="small muted">(optional)</span></strong><textarea name="whatChanged" maxlength="500" placeholder="A map, discussion or piece of work helped me notice…"></textarea></label><label class="stack" style="gap:.4rem"><strong>What I still wonder <span class="small muted">(optional)</span></strong><textarea name="stillWondering" maxlength="500" placeholder="I still wonder…"></textarea></label></div><fieldset class="stack" style="border:0;padding:0;margin:0"><legend><strong>Link evidence from My Work <span class="muted small">(optional)</span></strong></legend>${artifacts.length ? `<div class="choice-grid">${artifacts.slice(0, 8).map((artifact) => `<label class="choice-card" style="min-height:auto"><input type="checkbox" name="evidence" value="${escapeAttr(artifact.id)}" /> <strong>${escapeHTML(artifact.title || humanise(artifact.type))}</strong></label>`).join('')}</div>` : '<p class="small muted">You have not saved a piece of work yet. Your response can stand on its own.</p>'}</fieldset><div class="cluster"><button class="button" type="submit">Save what I think now</button><button class="button secondary" type="button" data-action="start-voice-response">Record my voice</button></div><div data-audio-recorder-status class="small muted">Voice recording is optional.</div></form></section></div>`;
+  return `<div class="modal-backdrop" data-modal="planet-question"><section class="modal wide" role="dialog" aria-modal="true" aria-labelledby="planet-response-title"><div class="modal-head"><div><p class="eyebrow">What I think now</p><h2 id="planet-response-title">How can we look after our planet?</h2></div><button class="icon-button" type="button" data-action="close-modal" aria-label="Close">×</button></div><form class="modal-body stack" id="planet-question-form"><p class="muted">Use a sentence, your voice, or both. There is no single expected answer.</p><label class="stack" style="gap:.4rem"><strong>My idea</strong><textarea name="text" maxlength="700" placeholder="I think… because…"></textarea></label><div class="cluster"><button class="button secondary" type="button" data-action="start-voice-response">Record my voice</button><span data-audio-recorder-status class="small muted">Optional</span></div><details class="response-evidence"><summary>Add what changed, a question or evidence <span class="small muted">optional</span></summary><div class="stack"><div class="two-field-grid"><label class="stack" style="gap:.4rem"><strong>What changed my thinking</strong><textarea name="whatChanged" maxlength="500" placeholder="A map, discussion or piece of work helped me notice…"></textarea></label><label class="stack" style="gap:.4rem"><strong>What I still wonder</strong><textarea name="stillWondering" maxlength="500" placeholder="I still wonder…"></textarea></label></div><fieldset class="stack"><legend><strong>Evidence from My Work</strong></legend>${artifacts.length ? `<div class="choice-grid">${artifacts.slice(0, 8).map((artifact) => `<label class="choice-card" style="min-height:auto"><input type="checkbox" name="evidence" value="${escapeAttr(artifact.id)}" /> <strong>${escapeHTML(artifact.title || humanise(artifact.type))}</strong></label>`).join('')}</div>` : '<p class="small muted">No saved work yet. Your response can stand on its own.</p>'}</fieldset></div></details><button class="button" type="submit">Save what I think now</button></form></section></div>`;
 }
 
 export function renderEditArtifactModal(artifact, mode = 'revise') {
@@ -412,7 +394,9 @@ export function renderVersionCompareModal(artifact) {
   return `<div class="modal-backdrop" data-modal="versions"><section class="modal wide" role="dialog" aria-modal="true" aria-labelledby="versions-title"><div class="modal-head"><div><p class="eyebrow">Earlier thinking remains visible</p><h2 id="versions-title">Compare versions</h2></div><button class="icon-button" type="button" data-action="close-modal" aria-label="Close">×</button></div><div class="modal-body version-compare-grid">${versions.map((version, index) => {
     const type = version.artefactType || version.artefactTypeId || artifact.type || artifact.artefactType;
     const content = version.content || version.structuredContent || {};
-    const entries = displayContentEntries(content).slice(0, 8);
-    return `<article class="paper-panel panel-pad stack"><div><p class="eyebrow">Version ${index + 1} · ${formatDate(version.createdAt || version.timestamp, { year: true })}</p><h3>${escapeHTML(version.title || artifact.title)}</h3></div><div class="work-preview version-preview">${renderSavedPreview(version, type)}</div>${renderOutcomeTemplate(type, content)}${entries.length ? `<dl class="version-fields">${entries.map(([key, value]) => outcomeField(humanise(key), value)).join('')}</dl>` : ''}${version.explanation || version.writtenExplanation ? `<div><p class="eyebrow">Explanation at this point</p><p>${escapeHTML(version.explanation || version.writtenExplanation)}</p></div>` : ''}${version.voiceExplanation ? '<p class="small muted">A voice explanation is preserved in this version. Reopen the version to listen in full.</p>' : ''}</article>`;
+    const outcomeTemplate = renderOutcomeTemplate(type, content);
+    const entries = outcomeTemplate ? [] : displayContentEntries(content).slice(0, 8);
+    const explanation = version.explanation || version.writtenExplanation;
+    return `<article class="paper-panel panel-pad stack"><div><p class="eyebrow">Version ${index + 1} · ${formatDate(version.createdAt || version.timestamp, { year: true })}</p><h3>${escapeHTML(version.title || artifact.title)}</h3></div><div class="work-preview version-preview">${renderSavedPreview(version, type)}</div>${outcomeTemplate}${entries.length ? `<dl class="version-fields">${entries.map(([key, value]) => outcomeField(humanise(key), value)).join('')}</dl>` : ''}${explanation && !outcomeTemplatesWithExplanation.has(type) ? `<div><p class="eyebrow">Explanation at this point</p><p>${escapeHTML(explanation)}</p></div>` : ''}${version.voiceExplanation ? '<p class="small muted">A voice explanation is preserved in this version. Reopen the version to listen in full.</p>' : ''}</article>`;
   }).join('')}</div></section></div>`;
 }

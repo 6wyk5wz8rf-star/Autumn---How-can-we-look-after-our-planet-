@@ -6,8 +6,19 @@ import { Keypad, renderKeypad } from '../src/components/Keypad.js';
 import { renderKeyGuide } from '../src/components/KeyGuide.js';
 import { KEY_MANIFEST } from '../src/data/keys.js';
 import { PLANET_ATLAS_ACTIVITIES } from '../src/data/activities.js';
-import { defaultActivityState, renderActivityView } from '../src/destinations/planet-atlas/activityExperience.js';
-import { renderMaintenanceView } from '../src/app/views.js';
+import {
+  ACTIVITY_STAGE_COUNT,
+  defaultActivityState,
+  normaliseActivityState,
+  renderActivityView,
+} from '../src/destinations/planet-atlas/activityExperience.js';
+import {
+  renderArtifactCard,
+  renderAtlasView,
+  renderHomeView,
+  renderMaintenanceView,
+  renderWorkDetailView,
+} from '../src/app/views.js';
 
 function installDom(markup = '') {
   const dom = new JSDOM(`<!doctype html><html><body>${markup}</body></html>`, {
@@ -73,18 +84,61 @@ test('the generated Key Guide splits cut-out cards into four-card pages', () => 
   dom.window.close();
 });
 
-test('all eight guided pathways render five distinct, usable stages', () => {
+test('all eight guided pathways use three continuous stages rather than five rigid screens', () => {
   for (const activity of PLANET_ATLAS_ACTIVITIES) {
-    const titles = [];
-    for (let step = 0; step < 5; step += 1) {
+    const labels = [];
+    for (let step = 0; step < ACTIVITY_STAGE_COUNT; step += 1) {
       const state = { ...defaultActivityState(activity), step };
       const dom = installDom(renderActivityView(activity, state));
-      const title = document.querySelector('#stage-title');
-      assert.ok(title, `${activity.id} stage ${step + 1} needs a heading`);
+      const progress = document.querySelector('.activity-progress');
+      assert.ok(progress, `${activity.id} stage ${step + 1} needs clear progress`);
+      assert.equal(document.querySelectorAll('.activity-moment').length, step < 2 ? 2 : 1);
+      assert.equal(document.querySelectorAll('[data-activity-step]').length, 0);
       assert.doesNotMatch(document.body.textContent, /\bundefined\b/);
-      titles.push(title.textContent.trim());
+      labels.push(progress.textContent.trim());
       dom.window.close();
     }
-    assert.equal(new Set(titles).size, 5, `${activity.id} has a duplicated stage`);
+    assert.equal(new Set(labels).size, ACTIVITY_STAGE_COUNT, `${activity.id} has a duplicated stage`);
   }
+});
+
+test('the reduced child surfaces keep one canonical action for each outcome', () => {
+  let dom = installDom(renderHomeView({ profile: { displayName: 'Mina' } }));
+  assert.equal(document.querySelectorAll('[data-route="atlas"]').length, 1);
+  dom.window.close();
+
+  dom = installDom(renderAtlasView());
+  assert.equal(document.querySelectorAll('[data-action^="save-atlas"]').length, 1);
+  assert.equal(document.querySelector('.atlas-side'), null);
+  dom.window.close();
+
+  dom = installDom(renderArtifactCard({ id: 'piece-1', title: 'My map', artefactType: 'exploration-snapshot' }));
+  assert.equal(document.querySelectorAll('button').length, 1);
+  assert.equal(document.querySelector('[data-action="duplicate-artifact"]'), null);
+  dom.window.close();
+});
+
+test('unfinished five-screen drafts migrate safely into the reduced three-stage flow', () => {
+  const activity = PLANET_ATLAS_ACTIVITIES[0];
+  assert.equal(normaliseActivityState(activity, { activityId: activity.id, step: 0 }).step, 0);
+  assert.equal(normaliseActivityState(activity, { activityId: activity.id, step: 2 }).step, 1);
+  assert.equal(normaliseActivityState(activity, { activityId: activity.id, step: 4 }).step, 2);
+  assert.equal(normaliseActivityState(activity, { activityId: activity.id, workflowVersion: 2, step: 2 }).step, 2);
+});
+
+test('saved work never exposes internal workflow or schema language', () => {
+  const dom = installDom(renderWorkDetailView({
+    id: 'piece-1',
+    title: 'My Place Pin',
+    artefactType: 'place-pin',
+    createdAt: new Date().toISOString(),
+    content: {
+      workflowVersion: 2,
+      outcomeSchemaVersion: 1,
+      observation: 'The country follows the river.',
+    },
+  }));
+  assert.doesNotMatch(document.body.textContent, /workflow version|schema version/i);
+  assert.match(document.body.textContent, /country follows the river/i);
+  dom.window.close();
 });

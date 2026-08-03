@@ -53,22 +53,27 @@ export function renderCreateProfileForm({ showBack = false } = {}) {
       <input name="name" type="text" maxlength="24" required placeholder="For example, Mina or MJ" aria-describedby="profile-privacy" />
     </label>
     <p class="small muted" id="profile-privacy">No email, surname or password. This stays on this device.</p>
-    <fieldset class="stack" style="border:0;padding:0;margin:0">
-      <legend><strong>Choose a symbol</strong></legend>
-      <div class="symbol-picker">
-        ${PROFILE_SYMBOLS.map((symbol, index) => `<button class="symbol-choice" type="button" data-action="choose-symbol" data-value="${escapeAttr(symbol.id)}" aria-label="Choose ${symbol.id} symbol" aria-pressed="${index === 0}">${escapeHTML(symbol.icon)}</button>`).join('')}
+    <input type="hidden" name="symbol" value="${escapeAttr(PROFILE_SYMBOLS[0].id)}" />
+    <input type="hidden" name="pattern" value="${PROFILE_PATTERNS[0]}" />
+    <details class="personalise-profile">
+      <summary>Choose a symbol and pattern <span class="small muted">optional</span></summary>
+      <div class="personalise-profile__choices">
+        <fieldset class="stack">
+          <legend><strong>Symbol</strong></legend>
+          <div class="symbol-picker">
+            ${PROFILE_SYMBOLS.map((symbol, index) => `<button class="symbol-choice" type="button" data-action="choose-symbol" data-value="${escapeAttr(symbol.id)}" aria-label="Choose ${symbol.id} symbol" aria-pressed="${index === 0}">${escapeHTML(symbol.icon)}</button>`).join('')}
+          </div>
+        </fieldset>
+        <fieldset class="stack">
+          <legend><strong>Pattern</strong></legend>
+          <div class="pattern-picker">
+            ${PROFILE_PATTERNS.map((pattern, index) => `<button class="pattern-choice" type="button" data-action="choose-pattern" data-pattern="${pattern}" data-value="${pattern}" aria-label="Choose ${pattern} pattern" aria-pressed="${index === 0}"></button>`).join('')}
+          </div>
+        </fieldset>
       </div>
-      <input type="hidden" name="symbol" value="${escapeAttr(PROFILE_SYMBOLS[0].id)}" />
-    </fieldset>
-    <fieldset class="stack" style="border:0;padding:0;margin:0">
-      <legend><strong>Choose a pattern</strong></legend>
-      <div class="pattern-picker">
-        ${PROFILE_PATTERNS.map((pattern, index) => `<button class="pattern-choice" type="button" data-action="choose-pattern" data-pattern="${pattern}" data-value="${pattern}" aria-label="Choose ${pattern} pattern" aria-pressed="${index === 0}"></button>`).join('')}
-      </div>
-      <input type="hidden" name="pattern" value="${PROFILE_PATTERNS[0]}" />
-    </fieldset>
+    </details>
     <div class="cluster">
-      <button class="button" type="submit">Enter Our Planet</button>
+      <button class="button" type="submit">Open my space</button>
       ${showBack ? '<button class="button secondary" type="button" data-action="back-to-profiles">Back</button>' : ''}
     </div>
   </form>`;

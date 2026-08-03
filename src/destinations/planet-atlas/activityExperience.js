@@ -1,6 +1,10 @@
 import { escapeAttr, escapeHTML } from '../../utils/dom.js';
 
-export const ACTIVITY_RHYTHM = ['Notice', 'Explore', 'Make', 'Explain', 'Revisit'];
+export const ACTIVITY_RHYTHM = ['Look & explore', 'Make & explain', 'Save & revisit'];
+export const ACTIVITY_STAGE_COUNT = ACTIVITY_RHYTHM.length;
+
+const ACTIVITY_MOMENTS = ['Notice', 'Explore', 'Make', 'Explain', 'Revisit'];
+const STAGE_MOMENTS = [[0, 1], [2, 3], [4]];
 
 export function activityKind(activity) {
   const text = `${activity?.id || ''} ${activity?.title || ''}`.toLowerCase();
@@ -16,6 +20,7 @@ export function activityKind(activity) {
 
 export function defaultActivityState(activity) {
   return {
+    workflowVersion: 2,
     activityId: activity.id,
     step: 0,
     startedAt: new Date().toISOString(),
@@ -42,28 +47,37 @@ export function defaultActivityState(activity) {
   };
 }
 
+export function normaliseActivityState(activity, savedState = null) {
+  if (!savedState) return defaultActivityState(activity);
+  const state = { ...defaultActivityState(activity), ...savedState };
+  if (!savedState.workflowVersion) {
+    const legacyStep = Math.max(0, Math.min(4, Number(savedState.step) || 0));
+    state.step = legacyStep <= 1 ? 0 : legacyStep <= 3 ? 1 : 2;
+  } else {
+    state.step = Math.max(0, Math.min(ACTIVITY_STAGE_COUNT - 1, Number(savedState.step) || 0));
+  }
+  state.workflowVersion = 2;
+  return state;
+}
+
 export function renderActivityView(activity, state, { savedBefore = false, scaffold = 'core' } = {}) {
-  const step = Math.max(0, Math.min(4, state.step || 0));
+  const step = Math.max(0, Math.min(ACTIVITY_STAGE_COUNT - 1, state.step || 0));
   const kind = activityKind(activity);
   const content = renderStep(kind, step, state);
   return `<section class="page key-activity-shell" aria-labelledby="activity-title" data-activity-id="${escapeAttr(activity.id)}" data-scaffold-level="${escapeAttr(scaffold)}" data-activity-kind="${kind}">
     <header class="activity-banner">
-      <div>
-        <p class="eyebrow">Planet Atlas · Key Activity</p>
-        <h1 id="activity-title" style="font-size:clamp(2rem,4vw,3.35rem);margin-bottom:.5rem">${escapeHTML(activity.title)}</h1>
-        <p class="lede" style="margin-bottom:0">${escapeHTML(activity.shortInvitation || activity.invitation || activity.description || 'Follow this guided pathway, make something and save it for later.')}</p>
-      </div>
+      <div><p class="eyebrow">Key Activity</p><h1 id="activity-title">${escapeHTML(activity.title)}</h1></div>
       <div class="cluster no-print">
-        <button class="button secondary" type="button" data-route="atlas">Explore freely</button>
+        <button class="text-button" type="button" data-route="atlas">Back to Atlas</button>
         <button class="icon-button" type="button" data-action="speak-activity-instructions" aria-label="Hear this activity’s instructions">♪</button>
       </div>
     </header>
-    <nav class="activity-rhythm no-print" aria-label="Activity rhythm">
-      ${ACTIVITY_RHYTHM.map((label, index) => `<button class="rhythm-step" type="button" data-activity-step="${index}" ${index === step ? 'aria-current="step"' : ''}><span class="step-number">${index + 1}</span><span>${label}</span></button>`).join('')}
-    </nav>
+    <div class="activity-progress no-print" role="status" aria-label="Stage ${step + 1} of ${ACTIVITY_STAGE_COUNT}: ${escapeAttr(ACTIVITY_RHYTHM[step])}">
+      <span><strong>${step + 1} of ${ACTIVITY_STAGE_COUNT}</strong> · ${escapeHTML(ACTIVITY_RHYTHM[step])}</span>
+      <span class="activity-progress__line" style="--activity-progress:${((step + 1) / ACTIVITY_STAGE_COUNT) * 100}%" aria-hidden="true"></span>
+    </div>
     <div class="activity-stage">
-      <section class="activity-prompt paper-panel" aria-labelledby="stage-title">
-        <p class="eyebrow">${ACTIVITY_RHYTHM[step]}</p>
+      <section class="activity-prompt paper-panel" aria-label="${escapeAttr(ACTIVITY_RHYTHM[step])}">
         ${content.prompt}
         <aside class="scaffold-support scaffold-support--strong" aria-label="Extra thinking cue">Take one piece of map evidence at a time. Point to it, name it, then connect it to your idea.</aside>
         <aside class="scaffold-support scaffold-support--intensive" aria-label="Sentence support">You could begin: “I notice … on the map. This may help me explain …”</aside>
@@ -74,17 +88,23 @@ export function renderActivityView(activity, state, { savedBefore = false, scaff
       </section>
     </div>
     <div class="save-bar no-print">
-      <span class="small muted"><span class="status-dot"></span>${savedBefore ? 'An earlier version is safe in My Work.' : 'Your pathway can be saved in My Work.'}</span>
+      <span class="small muted"><span class="status-dot"></span>${savedBefore ? 'Earlier version safe' : 'Draft kept as you go'}</span>
       <div class="cluster">
         ${step > 0 ? '<button class="button secondary" type="button" data-action="previous-activity-step">Back</button>' : ''}
-        ${step < 4 ? '<button class="button" type="button" data-action="next-activity-step">Continue</button>' : `<button class="button" type="button" data-action="save-key-activity">${savedBefore ? 'Save a new version' : 'Save to My Work'}</button>`}
+        ${step < ACTIVITY_STAGE_COUNT - 1 ? '<button class="button" type="button" data-action="next-activity-step">Continue</button>' : `<button class="button" type="button" data-action="save-key-activity">${savedBefore ? 'Save a new version' : 'Save to My Work'}</button>`}
       </div>
     </div>
   </section>`;
 }
 
 function renderStep(kind, step, state) {
-  return EXPERIENCES[kind]?.[step]?.(state) || EXPERIENCES.understanding[step](state);
+  const experience = EXPERIENCES[kind] || EXPERIENCES.understanding;
+  const momentIndexes = STAGE_MOMENTS[step] || STAGE_MOMENTS[0];
+  const moments = momentIndexes.map((index) => experience[index](state));
+  return {
+    prompt: moments.map((moment, index) => `<section class="activity-moment"><p class="eyebrow">${ACTIVITY_MOMENTS[momentIndexes[index]]}</p>${moment.prompt.replace(' id="stage-title"', '')}</section>`).join(''),
+    overlay: moments.map((moment) => moment.overlay || '').join(''),
+  };
 }
 
 function field(label, name, value, placeholder, { rows = true, required = false } = {}) {

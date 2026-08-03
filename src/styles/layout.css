@@ -27,7 +27,7 @@
   backdrop-filter: blur(18px) saturate(1.1);
 }
 
-.brand-button {
+.brand-lockup {
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr);
   gap: 0.7rem;
@@ -36,7 +36,6 @@
   border: 0;
   background: transparent;
   text-align: left;
-  cursor: pointer;
 }
 
 .brand-mark {
@@ -50,12 +49,23 @@
   font-size: 1.1rem;
 }
 
+.brand-mark svg,
+.nav-icon svg,
+.header-actions .icon-button svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .brand-copy {
   min-width: 0;
 }
 
-.brand-title,
-.brand-subtitle {
+.brand-title {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -66,11 +76,6 @@
   color: var(--ink);
   font-family: "Iowan Old Style", Georgia, serif;
   font-size: 1rem;
-}
-
-.brand-subtitle {
-  color: var(--ink-soft);
-  font-size: 0.72rem;
 }
 
 .header-actions {
@@ -255,7 +260,6 @@
 }
 
 @media (max-width: 520px) {
-  .brand-subtitle,
   .profile-name {
     display: none;
   }

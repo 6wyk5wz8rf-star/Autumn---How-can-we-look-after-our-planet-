@@ -27,6 +27,10 @@ Build 1 includes:
 
 The remaining nine environments are registered as inactive product contracts. They are not exposed as dead child-facing destinations.
 
+### Product reduction pass
+
+Build 1.1 removes competing routes without reducing the learning model. Atlas now has one save path, guided maps expose only the controls needed beside the current prompt, profile personalisation is optional, saved-work cards have one primary action, and infrequent actions use progressive disclosure. The five-part learning rhythm remains intact inside three coherent stages: **Look & explore**, **Make & explain**, and **Save & revisit**.
+
 ## Product model
 
 ### Everything completed is open
@@ -41,7 +45,7 @@ The shared activity rhythm is:
 
 **Notice → Explore → Make → Explain → Revisit**
 
-It is rendered as a continuous experience rather than five compulsory mini-pages.
+It is grouped into three coherent stages rather than five competing mini-pages.
 
 ### One child workspace
 

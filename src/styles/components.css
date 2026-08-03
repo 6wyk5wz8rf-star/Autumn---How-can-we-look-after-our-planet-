@@ -196,6 +196,35 @@
 
 .profile-card .profile-symbol { width: 50px; height: 50px; font-size: 1.35rem; }
 
+.personalise-profile,
+.response-evidence,
+.work-more-actions {
+  border-block: 1px solid var(--line);
+}
+
+.personalise-profile > summary,
+.response-evidence > summary,
+.work-more-actions > summary {
+  min-height: 48px;
+  padding: 0.8rem 0.15rem;
+  color: var(--indigo);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.personalise-profile__choices,
+.response-evidence > .stack,
+.work-more-actions > .stack {
+  padding: 0.5rem 0 1rem;
+}
+
+.personalise-profile fieldset,
+.response-evidence fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 .symbol-picker,
 .pattern-picker {
   display: flex;
@@ -336,6 +365,23 @@
 .version-fields { display: grid; gap: 0.55rem; margin: 0; }
 .two-field-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
 .work-meta { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; color: var(--ink-soft); font-size: 0.8rem; }
+.work-shelf-heading { margin: 1.4rem 0 0.8rem; }
+
+.atlas-save-strip {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) auto;
+  gap: 0.55rem 0.8rem;
+  align-items: end;
+  max-width: 56rem;
+  margin: 0.85rem auto 0;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--paper-light) 78%, transparent);
+}
+
+.atlas-save-strip label { grid-column: 1 / -1; }
+.atlas-save-strip textarea { min-height: 48px; resize: vertical; }
 
 .question-history {
   border-left: 2px solid var(--mineral);
@@ -471,52 +517,40 @@
 }
 
 .activity-banner {
-  display: grid;
+  display: flex;
   gap: 1rem;
   align-items: center;
+  justify-content: space-between;
   padding: clamp(1rem, 3vw, 1.6rem);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: linear-gradient(120deg, color-mix(in srgb, var(--mineral) 18%, var(--paper-light)), var(--paper-light));
 }
 
-.activity-rhythm {
-  display: flex;
-  gap: 0.4rem;
-  overflow-x: auto;
-  padding: 0.15rem 0.1rem 0.5rem;
-  scrollbar-width: thin;
-}
+.activity-banner h1 { margin: 0.15rem 0 0; font-size: clamp(1.8rem, 3.5vw, 2.8rem); }
 
-.rhythm-step {
+.activity-progress {
   display: grid;
-  grid-template-columns: 1.5rem auto;
   gap: 0.45rem;
-  align-items: center;
-  min-width: max-content;
-  min-height: 46px;
-  padding: 0.45rem 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--paper-light);
   color: var(--ink-soft);
-  cursor: pointer;
+  font-size: 0.82rem;
 }
 
-.rhythm-step[aria-current="step"] {
-  border-color: var(--indigo);
+.activity-progress__line {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.activity-progress__line::after {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--activity-progress);
+  border-radius: inherit;
   background: var(--indigo);
-  color: white;
-}
-
-.step-number {
-  display: grid;
-  width: 1.45rem;
-  height: 1.45rem;
-  place-items: center;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  font-size: 0.72rem;
+  content: "";
 }
 
 .activity-stage {
@@ -527,6 +561,12 @@
 
 .activity-prompt {
   padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+.activity-moment + .activity-moment {
+  margin-top: 1.4rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
 }
 
 .choice-grid {
@@ -558,10 +598,6 @@ html[data-scaffold="light"] .key-activity-shell .choice-card > span:not(.choice-
 
 html[data-complexity="reduced"] .key-activity-shell .choice-grid {
   grid-template-columns: 1fr;
-}
-
-html[data-complexity="reduced"] .activity-rhythm .rhythm-step:not([aria-current="step"]) > span:last-child {
-  display: none;
 }
 
 .scaffold-support {
@@ -661,7 +697,6 @@ html[data-scaffold="intensive"] .activity-prompt input {
 .segmented button[aria-pressed="true"] { background: var(--indigo); color: white; }
 
 @media (min-width: 800px) {
-  .activity-banner { grid-template-columns: minmax(0, 1fr) auto; }
   .activity-stage { grid-template-columns: minmax(18rem, 0.7fr) minmax(0, 1.4fr); }
   .save-bar { bottom: 1rem; }
 }
@@ -672,4 +707,7 @@ html[data-scaffold="intensive"] .activity-prompt input {
   .atlas-landmark { right: 1rem; bottom: 5.5rem; width: 11rem; }
   .atlas-label { right: 60%; bottom: -7%; max-width: 10rem; }
   .world-question { display: none; }
+  .activity-banner { align-items: flex-start; flex-direction: column; }
+  .atlas-save-strip { grid-template-columns: 1fr; }
+  .atlas-save-strip label { grid-column: auto; }
 }

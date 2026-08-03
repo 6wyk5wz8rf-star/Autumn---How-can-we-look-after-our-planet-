@@ -82,7 +82,7 @@ The home world derives active child destinations from this registry. Changing a 
 - optional unscored Key Check
 - shared artefact outcome
 
-Activity UI is rendered by `activityExperience.js`; persistence and permissions do not depend on its visual layout.
+Activity UI is rendered by `activityExperience.js`. The five conceptual moments are grouped into three child-facing stages, and `workflowVersion` safely maps unfinished legacy drafts into that reduced flow. Persistence and permissions do not depend on the visual layout.
 
 ## Key architecture
 

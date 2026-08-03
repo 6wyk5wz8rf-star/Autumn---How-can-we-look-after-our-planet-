@@ -92,14 +92,6 @@
   font-weight: 700;
 }
 
-.atlas-map__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1.5rem;
-  margin-block-end: 1rem;
-}
-
 .atlas-map__title {
   max-width: 18ch;
   margin: 0.08rem 0 0.28rem;
@@ -180,6 +172,10 @@
   margin-block-end: 0.55rem;
 }
 
+.atlas-map__controls > .atlas-control-group:last-child {
+  margin-inline-start: auto;
+}
+
 .atlas-control-group {
   display: inline-flex;
   align-items: center;
@@ -206,6 +202,35 @@
   font-variant-numeric: tabular-nums;
 }
 
+.atlas-layer-menu {
+  position: relative;
+}
+
+.atlas-layer-menu > summary {
+  display: grid;
+  min-height: 44px;
+  place-items: center;
+  padding: 0.58rem 0.78rem;
+  border: 1px solid color-mix(in srgb, var(--atlas-indigo) 24%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--atlas-paper) 86%, white);
+  color: var(--atlas-ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.atlas-layer-menu > summary::-webkit-details-marker { display: none; }
+.atlas-layer-menu[open] > summary { border-color: var(--atlas-indigo); color: var(--atlas-indigo-deep); }
+
+.atlas-layer-menu > .atlas-control-group {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  min-width: max-content;
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--atlas-indigo) 18%, transparent);
+}
+
 .atlas-map__tools {
   align-items: center;
   margin-block-end: 0.65rem;
@@ -214,15 +239,6 @@
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--atlas-moss) 7%, transparent), transparent 42%),
     color-mix(in srgb, var(--atlas-paper) 88%, transparent);
-}
-
-.atlas-map__tools-label {
-  margin-inline: 0.15rem 0.25rem;
-  color: var(--atlas-ink-soft);
-  font-size: 0.78rem;
-  font-weight: 720;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .atlas-map__tools button[data-action='compare'] {
@@ -682,7 +698,7 @@ html[data-contrast='high'] .atlas-map__climate-pattern-dot--temperate {
 
 .atlas-map__status-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  grid-template-columns: 1fr;
   border: 1px solid var(--atlas-line);
   border-block-start: 0;
   background: color-mix(in srgb, var(--atlas-paper) 91%, white);
@@ -694,7 +710,14 @@ html[data-contrast='high'] .atlas-map__climate-pattern-dot--temperate {
 }
 
 .atlas-map__status-grid > section + section {
-  border-inline-start: 1px solid var(--atlas-line);
+  border-block-start: 1px solid var(--atlas-line);
+}
+
+.atlas-place-card {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
 }
 
 .atlas-map__status-grid h3 {
@@ -816,55 +839,6 @@ html[data-contrast='high'] .atlas-map__climate-pattern-dot--temperate {
   font-weight: 620;
 }
 
-.atlas-coordinate-tools {
-  margin-block: 0.75rem;
-  border-block: 1px solid var(--atlas-line);
-  padding-block: 0.35rem;
-}
-
-.atlas-coordinate-tools summary {
-  width: fit-content;
-  min-height: 44px;
-  padding: 0.7rem 0.45rem;
-  color: var(--atlas-indigo-deep);
-  font-weight: 710;
-  cursor: pointer;
-}
-
-.atlas-coordinate-tools > p {
-  margin: 0.2rem 0 0.8rem;
-  color: var(--atlas-ink-soft);
-  font-size: 0.88rem;
-}
-
-.atlas-coordinate-tools__fields,
-.atlas-coordinate-tools__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-block-end: 0.65rem;
-}
-
-.atlas-coordinate-tools__fields label {
-  display: grid;
-  flex: 1 1 12rem;
-  gap: 0.25rem;
-  color: var(--atlas-ink-soft);
-  font-size: 0.82rem;
-  font-weight: 680;
-}
-
-.atlas-coordinate-tools input {
-  min-height: 44px;
-  width: 100%;
-  border: 1px solid var(--atlas-line);
-  border-radius: 8px;
-  padding: 0.55rem 0.68rem;
-  color: var(--atlas-ink);
-  background: #fffdf7;
-  font-variant-numeric: tabular-nums;
-}
-
 .atlas-map__footer {
   display: flex;
   align-items: flex-start;
@@ -905,41 +879,28 @@ html[data-contrast='high'] .atlas-map__climate-pattern-dot--temperate {
 }
 
 @container atlas-map (max-width: 760px) {
-  .atlas-map__header {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .atlas-icon-button {
-    align-self: flex-start;
-  }
-
   .atlas-map__controls {
-    flex-direction: column;
-  }
-
-  .atlas-control-group {
     display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(max-content, 1fr);
-    width: 100%;
-    overflow-x: auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
   }
 
-  .atlas-map__tools {
+  .atlas-map__controls > .atlas-control-group:first-child {
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
 
-  .atlas-map__tools-label {
-    grid-column: 1 / -1;
+  .atlas-map__controls > .atlas-control-group:last-child { margin-inline-start: 0; }
+
+  .atlas-map[data-guided='true'] .atlas-map__controls {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .atlas-map__tools button[data-action='compare'] {
-    grid-column: 1 / -1;
-    margin-inline-start: 0;
+  .atlas-map__tools {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
   }
+
+  .atlas-map__tools button[data-action='compare'] { margin-inline-start: 0; }
 
   .atlas-map__climate-key {
     grid-template-columns: 1fr;
@@ -947,15 +908,6 @@ html[data-contrast='high'] .atlas-map__climate-pattern-dot--temperate {
 
   .atlas-map__biome-detail {
     grid-column: 1;
-  }
-
-  .atlas-map__status-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .atlas-map__status-grid > section + section {
-    border-block-start: 1px solid var(--atlas-line);
-    border-inline-start: 0;
   }
 
   .atlas-journey-card dl {
@@ -977,6 +929,32 @@ html[data-contrast='high'] .atlas-map__climate-pattern-dot--temperate {
   .atlas-map__footer-actions {
     width: 100%;
     justify-content: flex-start;
+  }
+}
+
+@container atlas-map (max-width: 480px) {
+  .atlas-map__controls {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .atlas-map__controls > .atlas-control-group:last-child {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  .atlas-map[data-guided='true'] .atlas-map__controls > .atlas-control-group:last-child {
+    grid-column: auto;
+  }
+
+  .atlas-layer-menu > .atlas-control-group {
+    right: 0;
+    left: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .atlas-map__tools {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -1006,8 +984,7 @@ html[data-contrast='high'] .atlas-map__climate-pattern-dot--temperate {
 
 @media (pointer: coarse) {
   .atlas-map button,
-  .atlas-coordinate-tools input,
-  .atlas-coordinate-tools summary {
+  .atlas-layer-menu summary {
     min-height: 48px;
   }
 
@@ -1031,7 +1008,6 @@ html[data-contrast='high'] .atlas-map__climate-pattern-dot--temperate {
   .atlas-map button,
   .atlas-map__stage-wrap,
   .atlas-map__status-grid,
-  .atlas-coordinate-tools input,
   .atlas-map__narration textarea {
     border: 1px solid CanvasText;
   }
@@ -1095,7 +1071,6 @@ html[data-contrast='high'] .atlas-map__climate-pattern-dot--temperate {
   .atlas-map__tools,
   .atlas-map__gesture,
   .atlas-map__crosshair,
-  .atlas-coordinate-tools,
   .atlas-map__footer-actions,
   .atlas-icon-button,
   .atlas-journey-card button,

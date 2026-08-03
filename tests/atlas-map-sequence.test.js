@@ -223,3 +223,28 @@ test('UK and The Gambia comparison includes physical features and relative map s
   map.destroy();
   dom.window.close();
 });
+
+test('guided pathways expose only the map controls needed beside their prompt', () => {
+  const dom = installDom({ reducedMotion: true });
+  const map = new AtlasMap(document.querySelector('#atlas'), {
+    guided: true,
+    reducedMotion: true,
+  });
+
+  assert.equal(document.querySelector('.atlas-map__trail'), null);
+  assert.equal(document.querySelector('.atlas-layer-menu'), null);
+  assert.equal(document.querySelector('.atlas-map__tools'), null);
+  const visibleButtons = [...document.querySelectorAll('.atlas-map button')]
+    .filter((button) => !button.closest('[hidden]'));
+  assert.equal(visibleButtons.length, 5);
+  assert.ok(document.querySelector('[data-view="globe"]'));
+  assert.ok(document.querySelector('[data-action="zoom-in"]'));
+  map.setTool('marker');
+  document.querySelector('.atlas-map__stage').dispatchEvent(
+    new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+  );
+  assert.equal(map.getState().markers.length, 1, 'Enter places a marker at the map centre without dragging');
+
+  map.destroy();
+  dom.window.close();
+});

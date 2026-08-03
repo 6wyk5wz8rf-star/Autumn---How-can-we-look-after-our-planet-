@@ -18,10 +18,12 @@ import {
   renderWorkView,
 } from './views.js';
 import {
+  ACTIVITY_STAGE_COUNT,
   defaultActivityState,
   activityKind,
   outcomeTypeForActivity,
   renderActivityView,
+  normaliseActivityState,
   titleForOutcome,
 } from '../destinations/planet-atlas/activityExperience.js';
 import { PLANET_ATLAS_ACTIVITIES, getActivityById } from '../data/activities.js';
@@ -67,7 +69,7 @@ import { speak } from '../services/speech.js';
 import { createAudioObjectUrl, revokeAudioObjectUrl, startAudioRecording } from '../services/audio.js';
 import { registerServiceWorker, subscribeToNetworkStatus } from '../services/serviceWorker.js';
 
-const APP_VERSION = 'build-1.0.0';
+const APP_VERSION = 'build-1.1.0';
 const MAINTENANCE_SESSION_KEY = 'our-planet:maintenance-session';
 
 function delay(milliseconds) {
@@ -343,7 +345,7 @@ export class App {
         return;
       }
       const savedDraft = await getActivityState(this.profile.id, activity.id);
-      this.activityState = savedDraft?.state || defaultActivityState(activity);
+      this.activityState = normaliseActivityState(activity, savedDraft?.state);
       if (this.lastRouteSignature !== `activity:${activity.id}`) {
         await recordActivityVisit(this.profile.id, activity).catch(() => {});
       }
@@ -509,7 +511,7 @@ export class App {
     if (!(element instanceof Element) || !this.root.contains(element)) return null;
     if (element.id) return { id: element.id };
     const names = [
-      'data-action', 'data-route', 'data-route-value', 'data-activity-step',
+      'data-action', 'data-route', 'data-route-value',
       'data-work-filter', 'data-setting', 'data-value', 'data-artifact-id',
       'data-profile-id', 'data-reflection-choice',
     ];
@@ -605,7 +607,6 @@ export class App {
       state: this.atlasOpenState,
       reducedMotion: this.settings?.reducedMotion,
       onChange: (state) => { this.atlasOpenState = state; },
-      onSnapshot: (snapshot) => this.saveAtlasSnapshot('', snapshot),
     });
     host.setAttribute('aria-busy', 'false');
   }
@@ -621,6 +622,7 @@ export class App {
       state: state.mapState,
       title: activity.title,
       description: activity.enquiry || activity.description,
+      guided: true,
       reducedMotion: this.settings?.reducedMotion,
       onChange: (mapState, reason) => {
         state.mapState = mapState;
@@ -628,10 +630,6 @@ export class App {
         this.scheduleActivityStateSave();
         this.describeMapFeedback(activity, mapState, reason);
       },
-      onSnapshot: (snapshot) => this.saveAtlasSnapshot('', snapshot, {
-          activityId: activity.id,
-          keyActivityId: activity.id,
-        }),
     });
     host.setAttribute('aria-busy', 'false');
     this.prepareActivityMap(activity, state);
@@ -722,14 +720,6 @@ export class App {
       return;
     }
 
-    const stepButton = event.target.closest('[data-activity-step]');
-    if (stepButton) {
-      this.activityState.step = Number(stepButton.dataset.activityStep);
-      await this.persistActivityState();
-      await this.render({ preserveFocus: true });
-      return;
-    }
-
     const toggle = event.target.closest('[data-draft-toggle]');
     if (toggle) {
       const field = toggle.dataset.draftToggle;
@@ -760,17 +750,11 @@ export class App {
       return;
     }
 
-    const focusButton = event.target.closest('[data-atlas-focus], [data-atlas-mode], [data-map-focus-step], [data-map-tool], [data-work-filter], [data-setting], [data-reflection-choice]');
+    const focusButton = event.target.closest('[data-map-focus-step], [data-map-tool], [data-work-filter], [data-setting], [data-reflection-choice]');
     if (focusButton) await this.handleSpecialButton(focusButton);
   }
 
   async handleSpecialButton(button) {
-    if (button.dataset.atlasFocus) {
-      const place = button.dataset.atlasFocus;
-      if (place === 'gambia') await this.map?.focusSequence('gambia');
-      else await this.map?.focusPlace(place);
-    }
-    if (button.dataset.atlasMode === 'compare') this.map?.comparePlaces('uk', 'gambia');
     if (button.dataset.mapFocusStep) {
       const place = button.dataset.mapFocusStep;
       if (place === 'gambia') {
@@ -850,14 +834,6 @@ export class App {
       'close-modal': () => this.closeModal(),
       'speak-text': () => this.speakVisible(button.dataset.speak || ''),
       'speak-activity-instructions': () => this.speakActivityInstructions(),
-      'save-atlas-snapshot': async () => {
-        try {
-          await this.saveAtlasSnapshot();
-        } catch (error) {
-          console.error(error);
-          this.toast('This atlas view could not be saved. Your map is still open; try again or ask an adult to export a backup.');
-        }
-      },
       'save-atlas-question': async () => {
         try {
           await this.saveAtlasSnapshot(this.root.querySelector('#atlas-question')?.value || '');
@@ -898,8 +874,6 @@ export class App {
       'clear-profile-work': () => this.confirmProfileAction(button.dataset.profileId, 'work'),
       'delete-profile': () => this.confirmProfileAction(button.dataset.profileId, 'profile'),
       'perform-profile-action': () => this.performProfileAction(),
-      'confirm-reset-demo': () => this.confirmResetDemo(),
-      'reset-demo': () => this.resetDemoProfiles(),
       'confirm-clear-all': () => this.confirmClearAll(),
       'clear-all-data': () => this.clearAllData(),
     };
@@ -1032,7 +1006,8 @@ export class App {
 
   async moveActivityStep(amount) {
     if (!this.activityState) return;
-    this.activityState.step = Math.max(0, Math.min(4, (this.activityState.step || 0) + amount));
+    const currentStep = Math.max(0, Math.min(ACTIVITY_STAGE_COUNT - 1, this.activityState.step || 0));
+    this.activityState.step = Math.max(0, Math.min(ACTIVITY_STAGE_COUNT - 1, currentStep + amount));
     await this.persistActivityState();
     await this.render({ preserveFocus: true });
   }
@@ -1292,7 +1267,7 @@ export class App {
     const activity = getActivityById(artifact.activityId);
     if (activity) {
       this.revisingArtifactId = artifact.id;
-      this.activityState = { ...defaultActivityState(activity), ...artifact.content, step: Math.min(3, artifact.content?.step || 2) };
+      this.activityState = { ...normaliseActivityState(activity, artifact.content), step: 1 };
       await saveActivityState(this.profile.id, activity.id, this.activityState, { destinationId: 'planet-atlas' });
       this.pendingToast = 'The original is safe. Changes will become a new version when you save.';
       navigate('activity', activity.id);
@@ -1437,22 +1412,6 @@ export class App {
     this.route = { name: 'maintenance', params: {} };
     await this.render();
     this.toast('The selected local data was removed.');
-  }
-
-  async confirmResetDemo() {
-    this.modalHTML = renderConfirmModal({ title: 'Reset demonstration data?', message: 'Only profiles whose name begins with “Demo” will be removed. Learner profiles and work are untouched.', confirmLabel: 'Remove demonstration profiles', action: 'reset-demo' });
-    await this.render({ preserveFocus: true });
-  }
-
-  async resetDemoProfiles() {
-    const demos = this.profiles.filter((profile) => printableProfileName(profile).toLowerCase().startsWith('demo'));
-    for (const profile of demos) await deleteProfile(profile.id, { confirm: true, deleteLearnerData: true });
-    this.profiles = await listProfiles();
-    this.profile = await getActiveProfile();
-    if (this.profile) await this.loadProfileData();
-    this.modalHTML = '';
-    await this.render();
-    this.toast(demos.length ? 'Demonstration profiles were removed.' : 'There was no demonstration data to remove.');
   }
 
   async confirmClearAll() {
