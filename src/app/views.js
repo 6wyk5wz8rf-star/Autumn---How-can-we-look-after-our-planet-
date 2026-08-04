@@ -12,6 +12,7 @@ import {
 } from '../maths/index.js';
 import { getOrganism } from '../data/organisms.js';
 import { renderOrganismIllustration } from '../science/illustrations.js';
+import { getActiveDestinations } from '../data/destinations.js';
 
 const artefactSymbols = {
   'exploration-snapshot': '◎',
@@ -23,6 +24,21 @@ const artefactSymbols = {
   'journey-thread': '⌁',
   'place-portrait': '▱',
   'planet-question-response': '◉',
+  'weather-and-climate-comparison': '≋',
+  'climate-pattern-strip': '▥',
+  'seasonal-wheel': '◌',
+  'climate-zone-observation': '◎',
+  'latitude-explanation': '↕',
+  'place-climate-comparison': '⇄',
+  'temperature-experiment': '°',
+  'rainfall-experiment': '⋮',
+  'seasonality-comparison': '≋',
+  'climate-to-biome-model': '⌇',
+  'climate-habitat-connection': '⌕',
+  'global-warming-explanation': '↗',
+  'place-impact-comparison': '◇',
+  'climate-response-reasoning': '⚖',
+  'child-created-climate-investigation': '⌁',
   'four-digit-model': '▦',
   'partition-card': '≡',
   'comparison-explanation': '↔',
@@ -79,6 +95,14 @@ const SCIENCE_ARTEFACT_TYPES = new Set([
   'child-created-science-challenge',
 ]);
 
+const CLIMATE_ARTEFACT_TYPES = new Set([
+  'weather-and-climate-comparison', 'climate-pattern-strip', 'seasonal-wheel',
+  'climate-zone-observation', 'latitude-explanation', 'place-climate-comparison',
+  'temperature-experiment', 'rainfall-experiment', 'seasonality-comparison',
+  'climate-to-biome-model', 'climate-habitat-connection', 'global-warming-explanation',
+  'place-impact-comparison', 'climate-response-reasoning', 'child-created-climate-investigation',
+]);
+
 const outcomeTemplatesWithExplanation = new Set([
   'place-pin',
   'climate-pattern-observation',
@@ -108,6 +132,10 @@ function renderSavedPreview(artifact, type) {
     const organismIds = artifact.content?.organismIds || artifact.structuredContent?.organismIds || artifact.preview?.organismIds || [];
     const organisms = organismIds.map(getOrganism).filter(Boolean).slice(0, 3);
     return `<span class="work-preview-symbol science-symbol" aria-hidden="true">${artefactSymbols[type] || '◉'}</span>${organisms.length ? `<span class="science-preview-names">${organisms.map((organism) => escapeHTML(organism.commonName)).join(' · ')}</span>` : `<strong>${escapeHTML(artifact.preview?.label || humanise(type))}</strong>`}`;
+  }
+  if (CLIMATE_ARTEFACT_TYPES.has(type)) {
+    const state = artifact.content?.climateState || artifact.structuredContent?.climateState || {};
+    return `<span class="work-preview-symbol climate-symbol" aria-hidden="true">${artefactSymbols[type] || '≋'}</span><strong>${Number(state.temperatureC ?? artifact.preview?.temperatureC ?? 0).toLocaleString('en-GB')}°C · ${Number(state.rainfallMm ?? artifact.preview?.rainfallMm ?? 0).toLocaleString('en-GB')} mm</strong>`;
   }
   return `<span class="work-preview-symbol" aria-hidden="true">${artefactSymbols[type] || '▱'}</span>${artifact.preview?.label ? `<strong>${escapeHTML(artifact.preview.label)}</strong>` : ''}`;
 }
@@ -235,7 +263,17 @@ function renderScienceOutcome(type, content) {
   </section>`;
 }
 
+function renderClimateOutcome(type, content) {
+  const state = content.climateState || {};
+  const evidence = content.evidence || {};
+  const locations = content.selectedLocationIds || [];
+  const sources = content.sourceRecords || [];
+  const components = content.dataComponents || [];
+  return `<section class="saved-outcome-template climate-outcome" data-climate-print><div class="science-outcome-mark" aria-hidden="true">${artefactSymbols[type] || '≋'}</div><div><h2>${escapeHTML(humanise(type))}</h2><div class="climate-saved-values"><strong>${Number(state.temperatureC ?? content.variableValues?.temperatureC ?? 0).toLocaleString('en-GB')}°C</strong><strong>${Number(state.rainfallMm ?? content.variableValues?.rainfallMm ?? 0).toLocaleString('en-GB')} mm yearly rainfall</strong><span>${escapeHTML(state.seasonality || content.variableValues?.seasonality || 'pattern')}</span></div><dl>${outcomeField('Places', locations.map(humanise))}${outcomeField('Main data status', content.dataStatus)}${outcomeField('Data parts', components.map((component) => `${humanise(component.id)}: ${humanise(component.status)}`))}${outcomeField('Data period or year', content.dataYear)}${outcomeField('We observed', evidence.observed)}${outcomeField('We know', evidence.known)}${outcomeField('We infer', evidence.inferred)}${outcomeField('We predict', evidence.predicted)}${outcomeField('We are unsure', evidence.uncertain)}${outcomeField('Generator seed', content.generatorSeed)}</dl>${sources.length ? `<footer class="source-list"><strong>Sources kept with this work</strong>${sources.map((source) => `<span>${escapeHTML(source.publisher)} · ${escapeHTML(source.title)} · ${escapeHTML(source.dataPeriod || source.retrievedAt || '')} · retrieved ${escapeHTML(source.retrievedAt || 'not recorded')}</span>`).join('')}</footer>` : '<p class="small muted">This record uses a fictional or simplified model rather than real-world data.</p>'}</div></section>`;
+}
+
 function renderOutcomeTemplate(type, content) {
+  if (CLIMATE_ARTEFACT_TYPES.has(type)) return renderClimateOutcome(type, content);
   if (SCIENCE_ARTEFACT_TYPES.has(type)) return renderScienceOutcome(type, content);
   if (NUMBER_ARTEFACT_TYPES.has(type)) {
     return renderMathsOutcome(type, content);
@@ -275,8 +313,15 @@ function renderOutcomeTemplate(type, content) {
   return '';
 }
 
-export function renderHomeView({ profile, recentActivity, workCount = 0 }) {
+export function renderHomeView({ profile, recentActivity, recentWork = null, workCount = 0 }) {
   const greeting = profile ? `Welcome back, ${escapeHTML(profile.displayName || profile.name)}.` : 'A world for careful looking.';
+  const destinations = getActiveDestinations();
+  const routeNames = { 'planet-atlas': 'atlas', 'number-expedition': 'numbers', 'living-things-observatory': 'living-things', 'climate-laboratory': 'climate' };
+  const continuation = recentWork
+    ? { route: 'work', value: recentWork.id, title: recentWork.title || humanise(recentWork.artefactType), label: 'Continue where you left off' }
+    : recentActivity
+      ? { route: 'activity', value: recentActivity.id, title: recentActivity.title, label: 'Continue where you left off' }
+      : null;
   return `<section class="page" aria-labelledby="home-title">
     <div class="home-world">
       <svg class="world-skyline" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -294,21 +339,14 @@ export function renderHomeView({ profile, recentActivity, workCount = 0 }) {
       <div class="world-intro">
         <p class="eyebrow">${greeting}</p>
         <h1 id="home-title">How can we look after our planet?</h1>
-        <p class="lede">Begin anywhere. Look closely. Follow what the evidence reveals.</p>
+        <p class="lede">Choose a place and begin. You can enter a key or return to saved work at any time.</p>
       </div>
-      <aside class="home-key-station no-print" aria-labelledby="home-key-title"><p class="eyebrow">One direct path</p><h2 id="home-key-title">Today’s Key</h2>${renderKeypad()}</aside>
-      <button class="atlas-landmark" type="button" data-route="atlas" aria-label="Open Planet Atlas">
-        <span class="atlas-orb" aria-hidden="true"></span>
-        <span class="atlas-label"><strong>Planet Atlas</strong><span>Globe · map · places · journeys</span></span>
-      </button>
-      <button class="number-landmark" type="button" data-route="numbers" aria-label="Open Number Expedition"><span class="number-cairn" aria-hidden="true"><i>1</i><i>10</i><i>100</i><i>1,000</i></span><span class="atlas-label"><strong>Number Expedition</strong><span>Build · move · compare · prove</span></span></button>
-      <button class="science-landmark" type="button" data-route="living-things" aria-label="Open Living Things Observatory"><span class="science-lens" aria-hidden="true"><i></i><b></b><em></em></span><span class="atlas-label"><strong>Living Things Observatory</strong><span>Observe · group · classify · connect</span></span></button>
+      <div class="destination-grove" aria-label="Places to explore">${destinations.map((destination) => `<button class="destination-landmark destination-${escapeAttr(destination.ordinal)}" type="button" data-route="${escapeAttr(routeNames[destination.id])}" aria-label="Open ${escapeAttr(destination.title)}"><span class="destination-symbol" aria-hidden="true">${escapeHTML(destination.symbol)}</span><span><strong>${escapeHTML(destination.title)}</strong><small>${escapeHTML(destination.invitation)}</small></span></button>`).join('')}</div>
+      <aside class="today-key-invitation no-print"><div><p class="eyebrow">Today’s Key</p><strong>Have four digits?</strong></div><button class="button tonal" type="button" data-route="key">Enter a Key</button></aside>
     </div>
-    ${recentActivity ? `<aside class="paper-panel panel-pad" style="margin-top:1rem" aria-label="Continue a recent pathway">
-      <div class="spread">
-        <div><p class="eyebrow">A path you opened</p><h3 style="margin:0">${escapeHTML(recentActivity.title)}</h3></div>
-        <button class="button tonal" type="button" data-route="activity" data-route-value="${escapeAttr(recentActivity.id)}">Revisit</button>
-      </div>
+    ${continuation ? `<aside class="continue-invitation" aria-label="Continue recent work">
+      <div><p class="eyebrow">${continuation.label}</p><h2>${escapeHTML(continuation.title)}</h2></div>
+      <button class="button" type="button" data-route="${continuation.route}" data-route-value="${escapeAttr(continuation.value)}">Continue</button>
     </aside>` : ''}
   </section>`;
 }
@@ -317,9 +355,10 @@ export function renderLivingThingsHost({ toolId = null, activityId = null } = {}
   return `<div id="living-things-observatory" data-science-tool-id="${escapeAttr(toolId || '')}" data-science-activity-id="${escapeAttr(activityId || '')}"></div>`;
 }
 
-export function renderAtlasView() {
+export function renderAtlasView({ returnToContext = false } = {}) {
   return `<section class="page atlas-page" aria-labelledby="atlas-title">
     <div class="page-head">
+      ${returnToContext ? '<button class="text-button no-print" type="button" data-action="return-from-context">← Back</button>' : '<button class="text-button no-print" type="button" data-route="home">← Our Planet</button>'}
       <div>
         <p class="eyebrow">Open exploration · no key needed</p>
         <h1 id="atlas-title">Planet Atlas</h1>
@@ -327,10 +366,11 @@ export function renderAtlasView() {
       </div>
     </div>
     <div id="atlas-map" aria-busy="true"></div>
+    <details class="show-me no-print"><summary>Show me</summary><div><p><strong>Watch:</strong> Turn the globe, then move closer without losing the coastline.</p><p><strong>Example:</strong> Use the Atlantic Ocean and Africa’s western edge to orient the map.</p><p><strong>Your turn:</strong> Return to the map and locate one place using two visible clues.</p></div></details>
     <div class="atlas-save-strip no-print">
       <label for="atlas-question"><strong>What are you wondering?</strong><span class="small muted"> Optional</span></label>
       <textarea id="atlas-question" maxlength="280" rows="2" placeholder="Add a question to this view…"></textarea>
-      <button class="button" type="button" data-action="save-atlas-question">Save view</button>
+      <button class="button" type="button" data-action="save-atlas-question">Keep in My Work</button>
     </div>
   </section>`;
 }
@@ -338,6 +378,8 @@ export function renderAtlasView() {
 export function renderKeysView({ activities = [], access = [], artifacts = [] }) {
   const accessById = new Map(access.map((item) => [item.activityId || item.activity_id || item.id, item]));
   const opened = activities.filter((activity) => accessById.has(activity.id));
+  const recent = [...opened].sort((left, right) => new Date(accessById.get(right.id)?.lastVisitedAt || accessById.get(right.id)?.firstOpenedAt || 0) - new Date(accessById.get(left.id)?.lastVisitedAt || accessById.get(left.id)?.firstOpenedAt || 0))[0] || null;
+  const destinations = getActiveDestinations();
   return `<section class="page" aria-labelledby="keys-title">
     <div class="page-head">
       <div>
@@ -347,22 +389,22 @@ export function renderKeysView({ activities = [], access = [], artifacts = [] })
       </div>
       <button class="button" type="button" data-route="key">Enter a Key</button>
     </div>
-    ${opened.length ? `<div class="key-environments">
-      ${[['planet-atlas', 'Planet Atlas'], ['number-expedition', 'Number Expedition'], ['living-things-observatory', 'Living Things Observatory']].map(([destinationId, destinationTitle]) => {
+    ${recent ? `<section class="key-continue"><div><p class="eyebrow">Continue</p><h2>${escapeHTML(recent.title)}</h2><p>${escapeHTML(recent.shortInvitation || recent.invitation || '')}</p></div><button class="button" type="button" data-route="activity" data-route-value="${escapeAttr(recent.id)}">Continue</button></section>` : ''}
+    ${opened.length ? `<div class="key-library-tools no-print"><label for="key-library-search">Find a Key Activity</label><input id="key-library-search" type="search" data-key-library-search placeholder="Search titles and invitations…" /></div><div class="key-environments">
+      ${destinations.map(({ id: destinationId, title: destinationTitle, symbol }) => {
         const destinationActivities = opened.filter((activity) => activity.destinationId === destinationId);
         if (!destinationActivities.length) return '';
-        return `<section class="key-environment"><div class="spread"><div><p class="eyebrow">Open pathways</p><h2>${destinationTitle}</h2></div><span class="small muted">${destinationActivities.length} ${destinationActivities.length === 1 ? 'pathway' : 'pathways'}</span></div><div class="key-path-list">${destinationActivities.map((activity) => {
-        const record = accessById.get(activity.id) || {};
+        return `<section class="key-environment" data-key-environment><div class="spread"><div><p class="eyebrow"><span aria-hidden="true">${escapeHTML(symbol)}</span> My Key Activities</p><h2>${escapeHTML(destinationTitle)}</h2></div><span class="small muted">${destinationActivities.length} ${destinationActivities.length === 1 ? 'pathway' : 'pathways'}</span></div><div class="key-path-list">${destinationActivities.map((activity) => {
         const saved = artifacts.find((artifact) => artifact.activityId === activity.id || artifact.activity === activity.id);
-        return `<article class="key-path-row"><div><p class="eyebrow">${escapeHTML(activity.regionId ? humanise(activity.regionId) : activity.rhythm?.[0] || 'Notice')}</p><h3>${escapeHTML(activity.title)}</h3><p>${escapeHTML(activity.shortInvitation || activity.invitation || '')}</p></div><div class="key-row-meta"><span>${saved ? 'Saved work' : `Opened ${formatDate(record.firstOpenedAt || record.createdAt)}`}</span><button class="button" type="button" data-route="activity" data-route-value="${escapeAttr(activity.id)}">${saved ? 'Revisit' : 'Open'}</button></div></article>`;
+        return `<article class="key-path-row" data-key-search-text="${escapeAttr(`${activity.title} ${activity.shortInvitation || activity.invitation || ''}`.toLowerCase())}"><div><h3>${escapeHTML(activity.title)}</h3><p>${escapeHTML(activity.shortInvitation || activity.invitation || '')}</p></div><div class="key-row-meta"><button class="button" type="button" data-route="activity" data-route-value="${escapeAttr(activity.id)}">${saved ? 'Revisit' : 'Open'}</button></div></article>`;
       }).join('')}</div></section>`;
       }).join('')}
     </div>` : `<div class="empty-state">
       <div>
         <div class="display-type" style="font-size:3rem;color:var(--mineral)" aria-hidden="true">⌘</div>
         <h2>Your key shelf is ready</h2>
-        <p class="muted">Enter a four-digit key, or explore either open environment.</p>
-        <div class="cluster" style="justify-content:center"><button class="button" type="button" data-route="key">Enter a Key</button><button class="button secondary" type="button" data-route="numbers">Explore numbers</button></div>
+        <p class="muted">Enter a four-digit key to remember a guided pathway. Every completed destination is already open for free exploration.</p>
+        <div class="cluster" style="justify-content:center"><button class="button" type="button" data-route="key">Enter a Key</button><button class="button secondary" type="button" data-route="home">Explore Our Planet</button></div>
       </div>
     </div>`}
   </section>`;
@@ -374,15 +416,17 @@ export function renderCollectionView({ key, activities = [], artifacts = [] }) {
   }
   const activityIds = new Set(key.activityIds || []);
   const included = activities.filter((activity) => activityIds.has(activity.id));
+  const first = included[0];
   return `<section class="page" aria-labelledby="collection-title">
     <div class="page-head">
       <div><p class="eyebrow">Key Collection · ${escapeHTML(key.destinationTitle || humanise(key.destinationId || 'pathways'))}</p><h1 id="collection-title">${escapeHTML(key.childFacingTitle || key.title)}</h1><p class="lede">${escapeHTML(key.description || 'Explore these connected pathways in any order.')}</p></div>
-      <button class="button secondary" type="button" data-route="keys">All My Keys</button>
+      <button class="button secondary" type="button" data-route="keys">View in My Keys</button>
     </div>
-    <div class="key-path-list">${included.map((activity) => {
+    ${first ? `<section class="key-continue"><div><p class="eyebrow">Ready to begin</p><h2>${escapeHTML(first.title)}</h2><p>${escapeHTML(first.shortInvitation || first.invitation || '')}</p></div><button class="button" type="button" data-route="activity" data-route-value="${escapeAttr(first.id)}">Start the first pathway</button></section>` : ''}
+    <details class="collection-pathways"><summary>See all ${included.length} pathways</summary><div class="key-path-list">${included.map((activity) => {
       const saved = artifacts.some((artifact) => artifact.activityId === activity.id || artifact.activity === activity.id);
       return `<article class="key-path-row"><div><p class="eyebrow">${escapeHTML(activity.regionId ? humanise(activity.regionId) : 'Connected pathway')}</p><h2>${escapeHTML(activity.title)}</h2><p>${escapeHTML(activity.shortInvitation || activity.invitation || '')}</p></div><div class="key-row-meta"><span>${saved ? 'Saved work' : 'Ready to explore'}</span><button class="button" type="button" data-route="activity" data-route-value="${escapeAttr(activity.id)}">${saved ? 'Revisit' : 'Open'}</button></div></article>`;
-    }).join('')}</div>
+    }).join('')}</div></details>
   </section>`;
 }
 
@@ -401,21 +445,12 @@ export function renderKeyEntryView() {
   </section>`;
 }
 
-export function renderWorkView({ artifacts = [], responses = [], activeFilter = 'all' }) {
-  const filters = [
-    ['all', 'All work'],
-    ['planet-atlas', 'Atlas'],
-    ['number-expedition', 'Numbers'],
-    ['living-things-observatory', 'Living Things'],
-    ['explanation', 'Explanations'],
-  ];
-  const showFilters = artifacts.length >= 6;
-  const effectiveFilter = showFilters ? activeFilter : 'all';
-  const visible = effectiveFilter === 'all' ? artifacts : artifacts.filter((artifact) => {
-    const haystack = [artifact.destinationId, artifact.destination, artifact.type, artifact.artefactType, ...(artifact.tags || []), ...(artifact.curriculumTags || [])].join(' ').toLowerCase();
-    return haystack.includes(effectiveFilter);
-  });
+export function renderWorkView({ artifacts = [], responses = [], activeFilter = 'recent' }) {
+  const filters = [['recent', 'Recent'], ['by-place', 'By Place'], ['planet-thinking', 'My Planet Thinking']];
+  const effectiveFilter = filters.some(([id]) => id === activeFilter) ? activeFilter : 'recent';
+  const visible = [...artifacts].sort((left, right) => new Date(right.updatedAt || right.createdAt) - new Date(left.updatedAt || left.createdAt));
   const artifactById = new Map(artifacts.map((artifact) => [artifact.id, artifact]));
+  const destinationRecords = getActiveDestinations();
   return `<section class="page" aria-labelledby="work-title">
     <div class="page-head">
       <div>
@@ -424,7 +459,8 @@ export function renderWorkView({ artifacts = [], responses = [], activeFilter = 
         <p class="lede">Open something to revisit it without losing the original.</p>
       </div>
     </div>
-    <section class="paper-panel panel-pad" aria-labelledby="planet-question-heading">
+    <div class="segmented work-view-switcher no-print" role="group" aria-label="My Work views">${filters.map(([id, label]) => `<button type="button" data-work-filter="${id}" aria-pressed="${effectiveFilter === id}">${label}</button>`).join('')}</div>
+    ${effectiveFilter === 'planet-thinking' ? `<section class="paper-panel panel-pad" aria-labelledby="planet-question-heading">
       <div class="spread">
         <div>
           <p class="eyebrow">A question that grows with you</p>
@@ -444,15 +480,18 @@ export function renderWorkView({ artifacts = [], responses = [], activeFilter = 
           ${response.evidenceIds?.length ? `<p class="small muted">Evidence linked: ${response.evidenceIds.map((id) => artifactById.get(id)?.title).filter(Boolean).map(escapeHTML).join(' · ') || `${response.evidenceIds.length} saved ${response.evidenceIds.length === 1 ? 'piece' : 'pieces'}`}</p>` : ''}
         </article>`).join('')}
       </div>` : '<p class="muted">There is no expected answer. Add a thought when something has changed, connected or made you wonder.</p>'}
-    </section>
-    <div class="spread work-shelf-heading">
-      ${showFilters ? `<div class="segmented no-print" role="group" aria-label="Filter saved work">${filters.map(([id, label]) => `<button type="button" data-work-filter="${id}" aria-pressed="${effectiveFilter === id}">${label}</button>`).join('')}</div>` : '<span></span>'}
-      <span class="small muted">${artifacts.length} saved ${artifacts.length === 1 ? 'piece' : 'pieces'}</span>
-    </div>
-    ${visible.length ? `<div class="work-shelf">
-      ${visible.map(renderArtifactCard).join('')}
-    </div>` : `<div class="empty-state"><div><div class="display-type" style="font-size:3rem;color:var(--moss)" aria-hidden="true">▱</div><h2>${artifacts.length ? 'No work in this view yet' : 'Your work will gather here'}</h2><p class="muted">Save a map view, mathematical model, scientific record or guided pathway. You can always return to the original.</p><div class="cluster" style="justify-content:center"><button class="button" type="button" data-route="atlas">Explore the atlas</button><button class="button secondary" type="button" data-route="numbers">Explore numbers</button><button class="button secondary" type="button" data-route="living-things">Explore living things</button></div></div></div>`}
+    </section>` : ''}
+    ${effectiveFilter === 'recent' ? `<div class="spread work-shelf-heading"><h2>Recent</h2><span class="small muted">${artifacts.length} saved ${artifacts.length === 1 ? 'piece' : 'pieces'}</span></div>${visible.length ? `<div class="work-shelf">${visible.map(renderArtifactCard).join('')}</div>` : renderEmptyWork()}` : ''}
+    ${effectiveFilter === 'by-place' ? `<div class="work-by-place">${destinationRecords.map((destination) => {
+      const placeWork = visible.filter((artifact) => (artifact.destinationId || artifact.destination) === destination.id);
+      if (!placeWork.length) return '';
+      return `<section><div class="spread"><h2><span aria-hidden="true">${escapeHTML(destination.symbol)}</span> ${escapeHTML(destination.title)}</h2><span class="small muted">${placeWork.length}</span></div><div class="work-shelf">${placeWork.map(renderArtifactCard).join('')}</div></section>`;
+    }).join('') || renderEmptyWork()}</div>` : ''}
   </section>`;
+}
+
+function renderEmptyWork() {
+  return `<div class="empty-state"><div><div class="display-type" style="font-size:3rem;color:var(--moss)" aria-hidden="true">▱</div><h2>Your work will gather here</h2><p class="muted">Use “Keep in My Work” when an exploration becomes something you want to revisit.</p><button class="button" type="button" data-route="home">Explore Our Planet</button></div></div>`;
 }
 
 export function renderArtifactCard(artifact) {
@@ -560,12 +599,21 @@ export function renderMaintenanceView({ profiles = [] }) {
   </section>`;
 }
 
-export function renderGlossary(glossary = []) {
+export function renderGlossary(glossary = [], { preferredDomain = null } = {}) {
+  const entriesByTerm = new Map();
+  for (const entry of glossary.filter((item) => item.active !== false && (!item.future || item.available))) {
+    const key = String(entry.term || '').trim().toLowerCase();
+    const current = entriesByTerm.get(key);
+    if (!current || (entry.domain === preferredDomain && current.domain !== preferredDomain)) entriesByTerm.set(key, entry);
+  }
   return `<aside class="glossary-popover" role="dialog" aria-modal="false" aria-labelledby="glossary-title">
     <div class="spread"><div><p class="eyebrow">Words for looking closely</p><h2 id="glossary-title" style="font-size:1.6rem">Visual glossary</h2></div><button class="icon-button" type="button" data-action="close-glossary" aria-label="Close glossary">×</button></div>
     <label class="sr-only" for="glossary-search">Search the glossary</label><input id="glossary-search" type="search" placeholder="Find a word…" data-glossary-search />
     <div class="stack" style="margin-top:1rem" data-glossary-results>
-      ${glossary.filter((entry) => entry.active !== false && (!entry.future || entry.available)).map((entry) => `<article data-glossary-entry="${escapeAttr(entry.term)}"><div class="spread"><h3 style="margin:0">${escapeHTML(entry.term)}</h3><button class="icon-button" style="width:40px;height:40px;min-width:40px" type="button" data-action="speak-text" data-speak="${escapeAttr(entry.pronunciationText || entry.term)}" aria-label="Hear ${escapeAttr(entry.term)}">♪</button></div><p>${escapeHTML(entry.definition || entry.childDefinition || '')}</p>${entry.example ? `<p class="small muted">${escapeHTML(entry.example)}</p>` : ''}</article>`).join('')}
+      ${[...entriesByTerm.values()].map((entry) => {
+        const hasMore = entry.spokenPronunciation?.guide || entry.visualExample?.description || entry.deeperExplanation || entry.relatedConceptIds?.length;
+        return `<article data-glossary-entry="${escapeAttr(entry.term)}"><div class="spread"><h3 style="margin:0">${escapeHTML(entry.term)}</h3><button class="icon-button" style="width:40px;height:40px;min-width:40px" type="button" data-action="speak-text" data-speak="${escapeAttr(entry.pronunciationText || entry.term)}" aria-label="Hear ${escapeAttr(entry.term)}">♪</button></div><p>${escapeHTML(entry.definition || entry.childDefinition || '')}</p>${entry.example ? `<p class="small muted">${escapeHTML(entry.example)}</p>` : ''}${hasMore ? `<details class="glossary-more"><summary>Look closer</summary>${entry.spokenPronunciation?.guide ? `<p><strong>Say it:</strong> ${escapeHTML(entry.spokenPronunciation.guide)}</p>` : ''}${entry.visualExample?.description ? `<p><strong>Picture it:</strong> ${escapeHTML(entry.visualExample.description)}</p>` : ''}${entry.deeperExplanation ? `<p>${escapeHTML(entry.deeperExplanation)}</p>` : ''}${entry.relatedConceptIds?.length ? `<p class="small muted"><strong>Related:</strong> ${escapeHTML(entry.relatedConceptIds.map(humanise).join(' · '))}</p>` : ''}</details>` : ''}</article>`;
+      }).join('')}
     </div>
   </aside>`;
 }

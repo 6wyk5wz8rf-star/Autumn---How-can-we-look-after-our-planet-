@@ -33,6 +33,12 @@ const SCIENCE_TOPICS = Object.freeze([
   ['classification keys', 'Classification Keys'],
   ['habitats', 'Habitats'],
   ['environmental change', 'Environmental Change'],
+  ['weather climate', 'Weather & Climate'],
+  ['climate zones', 'Climate Zones'],
+  ['climate experiments', 'Climate Experiments'],
+  ['climate biomes', 'Climate & Biomes'],
+  ['global warming', 'Global Warming'],
+  ['climate response', 'Climate Response'],
 ]);
 
 const momentLabel = (value) => ({
@@ -95,6 +101,7 @@ export function renderTeacherKeyRoom({
   favouriteIds = [],
   filters = {},
   showTitleOnBoard = true,
+  recentDisplayedKeyIds = [],
   profileCount = 0,
 } = {}) {
   const state = {
@@ -106,8 +113,12 @@ export function renderTeacherKeyRoom({
     ...filters,
   };
   const options = getTeacherKeyFilterOptions(entries);
-  const filtered = filterTeacherKeyLibrary(entries, { ...state, favouriteIds });
+  const filtered = state.environment === 'none' && !state.query
+    ? []
+    : filterTeacherKeyLibrary(entries, { ...state, favouriteIds, environment: state.environment === 'none' ? 'all' : state.environment });
   const quick = getQuickTeacherKeys(entries, favouriteIds);
+  const recent = recentDisplayedKeyIds.map((id) => getTeacherKeyEntry(id, entries)).filter(Boolean).slice(0, 8);
+  const activeEnvironments = options.environments.filter(({ id }) => id !== '*').slice(0, 4);
   return `<section class="page teacher-key-room" aria-labelledby="teacher-key-room-title" data-teacher-key-room>
     <header class="teacher-key-room__header">
       <div><p class="eyebrow">Teacher entrance · 8584</p><h1 id="teacher-key-room-title">Teacher Key Room</h1><p class="lede">Find, display or print any current pathway. Leaving returns to children’s view.</p></div>
@@ -116,16 +127,19 @@ export function renderTeacherKeyRoom({
 
     <section class="teacher-key-tools" aria-label="Find a key">
       <label class="teacher-key-search"><span>Search keys</span><input type="search" value="${escapeAttr(state.query)}" placeholder="Rounding, exchange, The Gambia…" data-teacher-filter="query" autocomplete="off" /></label>
-      <label><span>Environment</span><select data-teacher-filter="environment">${option('all', 'All environments', state.environment)}${options.environments.map((item) => option(item.id, item.title, state.environment)).join('')}</select></label>
+      <label><span>Environment</span><select data-teacher-filter="environment">${option('none', 'Choose an environment', state.environment)}${option('all', 'All environments', state.environment)}${options.environments.map((item) => option(item.id, item.title, state.environment)).join('')}</select></label>
       <label><span>Curriculum</span><select data-teacher-filter="subject">${option('all', 'All curriculum', state.subject)}${options.subjects.map((item) => option(item.id, item.title, state.subject)).join('')}</select></label>
       <label><span>Scale</span><select data-teacher-filter="scale">${option('all', 'Every scale', state.scale)}${options.scales.map((item) => option(item.id, item.title, state.scale)).join('')}</select></label>
-      <div class="teacher-science-topics" role="group" aria-label="Science topic filters"><span>Science topics</span>${SCIENCE_TOPICS.map(([value, label]) => `<button type="button" data-teacher-action="topic" data-topic="${escapeAttr(value)}" aria-pressed="${state.topic === value}">${escapeHTML(label)}</button>`).join('')}</div>
+      <div class="teacher-environment-shortcuts" role="group" aria-label="Active destination filters"><span>Active destinations</span>${activeEnvironments.map((environment) => `<button type="button" data-teacher-action="environment" data-environment="${escapeAttr(environment.id)}" aria-pressed="${state.environment === environment.id}">${escapeHTML(environment.title)}</button>`).join('')}</div>
+      <details class="teacher-science-topics"><summary>Topic filters</summary><div role="group" aria-label="Science and climate topic filters">${SCIENCE_TOPICS.map(([value, label]) => `<button type="button" data-teacher-action="topic" data-topic="${escapeAttr(value)}" aria-pressed="${state.topic === value}">${escapeHTML(label)}</button>`).join('')}</div></details>
       <label class="teacher-key-board-choice"><input type="checkbox" data-teacher-board-title ${showTitleOnBoard ? 'checked' : ''} /> Show the pathway title with the code</label>
     </section>
 
     ${quick.length ? `<section class="teacher-quick-keys" aria-labelledby="teacher-quick-keys-title"><div class="teacher-key-group__heading"><div><p class="eyebrow">Local favourites</p><h2 id="teacher-quick-keys-title">Quick Keys</h2></div><button class="text-button" type="button" data-teacher-action="print-quick-cards">Print these cards</button></div><div class="teacher-quick-key-grid">${quick.map(quickKey).join('')}</div></section>` : ''}
 
-    <section class="teacher-key-results" aria-label="Key library" data-teacher-key-results>${renderTeacherKeyResults(filtered, favouriteIds)}</section>
+    ${recent.length ? `<section class="teacher-quick-keys" aria-labelledby="teacher-recent-keys-title"><div class="teacher-key-group__heading"><div><p class="eyebrow">Recently displayed</p><h2 id="teacher-recent-keys-title">Recent Codes</h2></div></div><div class="teacher-quick-key-grid">${recent.map(quickKey).join('')}</div></section>` : ''}
+
+    <section class="teacher-key-results" aria-label="Key library" data-teacher-key-results>${state.environment === 'none' && !state.query ? '<div class="teacher-key-empty"><h3>Choose a destination or search</h3><p>Codes appear only when they are useful, keeping the room calm.</p></div>' : renderTeacherKeyResults(filtered, favouriteIds)}</section>
 
     <section class="teacher-key-utilities" aria-labelledby="teacher-key-utilities-title">
       <div><p class="eyebrow">This device</p><h2 id="teacher-key-utilities-title">Protect and prepare</h2><p>Utilities stay separate from learner work. No learner details appear here.</p></div>
@@ -181,7 +195,7 @@ export class TeacherKeyRoomController {
     this.onFeedback = onFeedback;
     this.onError = onError;
     this.preferences = this.preferencesStore.getSnapshot();
-    this.filters = { query: '', environment: 'all', subject: 'all', scale: 'all', topic: 'all' };
+    this.filters = { query: '', environment: 'none', subject: 'all', scale: 'all', topic: 'all' };
     this.display = new FullScreenKeyDisplay({ document: root.ownerDocument });
     this.onInput = this.onInput.bind(this);
     this.onChange = this.onChange.bind(this);
@@ -203,6 +217,7 @@ export class TeacherKeyRoomController {
       favouriteIds: this.preferences.favouriteKeyIds,
       filters: this.filters,
       showTitleOnBoard: this.preferences.showTitleOnBoard,
+      recentDisplayedKeyIds: this.preferences.recentDisplayedKeyIds,
       profileCount: this.profileCount,
     });
   }
@@ -212,6 +227,7 @@ export class TeacherKeyRoomController {
     if (!results) return;
     const filtered = filterTeacherKeyLibrary(this.entries, {
       ...this.filters,
+      environment: this.filters.environment === 'none' && this.filters.query ? 'all' : this.filters.environment,
       favouriteIds: this.preferences.favouriteKeyIds,
     });
     results.innerHTML = renderTeacherKeyResults(filtered, this.preferences.favouriteKeyIds);
@@ -252,12 +268,20 @@ export class TeacherKeyRoomController {
         });
         this.renderResults();
       }
+      if (action === 'environment') {
+        this.filters.environment = button.dataset.environment;
+        this.filters.query = '';
+        this.render();
+      }
       if (action === 'exit') {
         const returnLocation = this.session?.close?.() ?? null;
         await this.call(this.onExit, returnLocation);
       }
       if (action === 'open' && entry) await this.call(this.onOpenKey, entry.key, entry);
-      if (action === 'display' && entry) await this.display.open(entry, { showTitle: this.preferences.showTitleOnBoard });
+      if (action === 'display' && entry) {
+        this.preferences = await this.preferencesStore.recordDisplayed(entry.id);
+        await this.display.open(entry, { showTitle: this.preferences.showTitleOnBoard });
+      }
       if (action === 'copy' && entry) {
         await copyTeacherKeyCode(entry, { document: this.root.ownerDocument });
         this.feedback(`${entry.code} copied.`);

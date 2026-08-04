@@ -142,6 +142,8 @@ test('child shell creates a profile, accepts the Gambia key and appends Planet Q
   responseForm.elements.text.value = 'We need to understand each place before choosing an action.';
   await app.submitPlanetQuestion(responseForm);
   assert.equal(app.responses.length, 1);
+  app.workFilter = 'planet-thinking';
+  await app.render();
   assert.match(document.body.textContent, /understand each place/);
 
   dom.window.close();

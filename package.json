@@ -1,9 +1,9 @@
 {
   "name": "how-can-we-look-after-our-planet",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "private": true,
   "type": "module",
-  "description": "An open-world Year 4 learning environment with Planet Atlas, Number Expedition and Living Things Observatory.",
+  "description": "A calm open-world Year 4 learning environment with Planet Atlas, Number Expedition, Living Things Observatory and Climate Laboratory.",
   "scripts": {
     "dev": "vite",
     "build": "vite build && node scripts/inject-sw-assets.mjs",

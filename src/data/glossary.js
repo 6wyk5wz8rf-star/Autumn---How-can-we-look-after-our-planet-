@@ -317,6 +317,62 @@ const scienceEntries = [
   ['specimen', 'specimen', 'SPES-ih-men', 'An organism or example studied closely; in this app it is a digital record, not a collected living thing.', 'A labelled observation tray with a diagram and source card.', 'Open a specimen drawer to inspect one organism record.', ['organism', 'observe']],
 ].map(scienceEntry);
 
+const climateEntry = ([id, term, guide, definition, example, related, deeper = null]) => glossaryEntry({
+  id: `climate-${id}`,
+  term,
+  domain: 'climate',
+  guide,
+  definition,
+  visual: `A labelled climate diagram showing ${term} through pattern as well as colour.`,
+  example,
+  related,
+  deeper,
+  activeInBuild1: false,
+  active: true,
+  activationBuild: 4,
+});
+
+const climateEntries = [
+  ['weather', 'weather', 'WETH-uh', 'Conditions experienced over a short time.', 'Today’s temperature and rain are weather observations.', ['climate', 'temperature', 'rainfall']],
+  ['climate', 'climate', 'KLY-mit', 'A pattern of weather commonly observed over a much longer time.', 'One unusual day does not define a climate.', ['weather', 'pattern', 'average'], 'Climate includes variation, ranges and extremes as well as averages.'],
+  ['pattern', 'pattern', 'PAT-un', 'Something that repeats or changes in a recognisable way.', 'A monthly rainfall strip can reveal a seasonal pattern.', ['climate', 'trend', 'variation']],
+  ['average', 'average', 'AV-er-ij', 'One value used to describe the centre of a set of values.', 'An annual average does not mean every day is close to it.', ['range', 'variation', 'climate']],
+  ['range', 'range', 'RAYNJ', 'The distance from the lowest value to the highest value.', 'A place can have a wide yearly temperature range.', ['average', 'temperature', 'variation']],
+  ['temperature', 'temperature', 'TEM-pruh-chuh', 'A measure of how hot or cold something is.', 'The model shows temperature in degrees Celsius.', ['degrees-celsius', 'weather', 'climate']],
+  ['degrees-celsius', 'degrees Celsius', 'dih-GREEZ SEL-see-us', 'A unit used to measure temperature, written °C.', 'Negative °C values are below the freezing point of fresh water.', ['temperature', 'negative-number']],
+  ['rainfall', 'rainfall', 'RAYN-fawl', 'Water falling as rain, measured over a stated time.', 'The graph shows monthly rainfall and a yearly total.', ['millimetres', 'seasonality', 'climate']],
+  ['millimetres', 'millimetres', 'MIL-ih-mee-tuhz', 'A unit of length used to describe rainfall depth, written mm.', '400 mm yearly rainfall is a total with a unit and time period.', ['rainfall', 'measurement']],
+  ['season', 'season', 'SEE-zun', 'A part of the year with a recurring pattern of conditions.', 'Seasons differ between places and hemispheres.', ['seasonality', 'hemisphere']],
+  ['seasonality', 'seasonality', 'SEE-zun-AL-ih-tee', 'How conditions are distributed or change through a year.', 'Two places can have the same rainfall total but different seasonality.', ['season', 'rainfall', 'pattern']],
+  ['climate-zone', 'climate zone', 'KLY-mit ZOHN', 'A broad area sharing some long-term climate patterns.', 'Zone boundaries are broad and are not perfect walls.', ['tropical', 'dry', 'temperate', 'polar']],
+  ['tropical', 'tropical', 'TROP-ih-kul', 'A broad climate pattern often warm through the year, with varied rainfall.', 'A tropical place is not automatically rainforest.', ['climate-zone', 'rainfall', 'equator']],
+  ['dry', 'dry', 'DRY', 'A broad climate pattern where available moisture is limited.', 'A dry climate can be hot or cold.', ['climate-zone', 'rainfall', 'desert']],
+  ['temperate', 'temperate', 'TEM-prut', 'A broad middle-latitude climate pattern with moderate temperatures and varied seasons.', 'Ocean influence can narrow a temperate place’s temperature range.', ['climate-zone', 'seasonality']],
+  ['continental', 'continental', 'kon-tih-NEN-tul', 'A broad pattern often with a wide yearly temperature range away from strong ocean influence.', 'Inland location can help explain a wide annual range.', ['climate-zone', 'range']],
+  ['polar', 'polar', 'POH-luh', 'A broad high-latitude climate pattern with very cool conditions.', 'Tundra and persistent polar ice are not identical.', ['climate-zone', 'latitude', 'tundra']],
+  ['latitude', 'latitude', 'LAT-ih-tyood', 'Distance north or south of the equator, measured in degrees.', 'Latitude helps explain broad solar-energy patterns but not climate by itself.', ['equator', 'climate-zone']],
+  ['equator', 'equator', 'ee-KWAY-tuh', 'An imaginary line halfway between Earth’s poles.', 'Places near the equator often receive more direct solar energy.', ['latitude', 'hemisphere']],
+  ['hemisphere', 'hemisphere', 'HEM-ih-sfeer', 'One half of Earth.', 'January and July occur in opposite seasonal parts of the year across hemispheres.', ['equator', 'seasonality']],
+  ['biome', 'biome', 'BY-ohm', 'A broad ecological pattern connected with climate, vegetation and living conditions.', 'One climate zone can contain more than one biome.', ['vegetation', 'habitat', 'climate']],
+  ['vegetation', 'vegetation', 'vej-ih-TAY-shun', 'The plants growing in an area.', 'Temperature, rainfall and seasonality influence possible vegetation.', ['biome', 'habitat', 'climate']],
+  ['atmosphere', 'atmosphere', 'AT-muh-sfeer', 'The layer of gases surrounding Earth.', 'Greenhouse gases in the atmosphere influence Earth’s energy balance.', ['greenhouse-gas', 'global-warming']],
+  ['global-warming', 'global warming', 'GLOH-bul WAW-ming', 'A long-term rise in Earth’s average surface temperature.', 'Global warming is identified through a global pattern over time, not one day.', ['climate-change', 'trend', 'evidence']],
+  ['climate-change', 'climate change', 'KLY-mit CHAYNJ', 'Long-term changes in climate patterns, including changes linked to global warming.', 'Effects and rates vary by place.', ['global-warming', 'impact', 'adaptation']],
+  ['evidence', 'evidence', 'EV-ih-duns', 'Information used to support, challenge or refine an idea.', 'A sourced graph is evidence; a future effect is a prediction.', ['observation', 'prediction', 'source']],
+  ['trend', 'trend', 'TREND', 'A broad direction of change across time.', 'A rising trend can still contain lower values in some years.', ['pattern', 'variation', 'global-warming']],
+  ['variation', 'variation', 'vair-ee-AY-shun', 'Differences around or within a broad pattern.', 'Climate averages contain variation from day to day and year to year.', ['average', 'range', 'trend']],
+  ['prediction', 'prediction', 'prih-DIK-shun', 'A possible future result based on evidence and reasoning.', 'A climate prediction is not a guaranteed fact.', ['evidence', 'uncertainty', 'impact']],
+  ['uncertainty', 'uncertainty', 'un-SUR-tun-tee', 'What is not yet known precisely or what could have more than one outcome.', 'State missing information before making a stronger claim.', ['prediction', 'evidence']],
+  ['impact', 'impact', 'IM-pakt', 'An effect on a living thing, place, system or community.', 'The same climate shift may have different impacts in different places.', ['effect', 'climate-change']],
+  ['adapt', 'adapt', 'uh-DAPT', 'To change in response to conditions.', 'A community may adapt how it stores water during dry periods.', ['adaptation', 'response']],
+  ['adaptation', 'adaptation', 'ad-ap-TAY-shun', 'A change intended to help people or environments cope with effects.', 'Shade and cooling spaces can be one place-specific adaptation.', ['adapt', 'climate-change', 'response']],
+  ['reduce', 'reduce', 'rih-DYOOS', 'To make an amount smaller.', 'Some responses aim to reduce greenhouse-gas emissions.', ['emissions', 'response']],
+  ['emissions', 'emissions', 'ih-MISH-unz', 'Substances released into the air, including greenhouse gases.', 'Electricity systems can have different greenhouse-gas emissions.', ['greenhouse-gas', 'reduce']],
+  ['greenhouse-gas', 'greenhouse gas', 'GREEN-house GAS', 'A gas that absorbs and re-emits heat energy in Earth’s atmosphere.', 'Carbon dioxide is one greenhouse gas.', ['atmosphere', 'emissions', 'global-warming']],
+  ['response', 'response', 'rih-SPONS', 'An action or change made because of a situation.', 'Climate responses can reduce causes, support adaptation, or both.', ['adaptation', 'reduce', 'trade-off']],
+  ['trade-off', 'trade-off', 'TRAYD-off', 'A choice where improving one thing may use resources or create another difficulty.', 'Restoring a wetland needs land, time and local participation.', ['response', 'evidence', 'decision']],
+].map(climateEntry);
+
 const artEntries = [
   glossaryEntry({ id: 'artist', term: 'artist', domain: 'art', guide: 'AR-tist', definition: 'A person who develops and communicates ideas through creative choices.', visual: 'A hand, eye, materials and idea connected around a work in progress.', example: 'An artist experiments, notices effects and decides what serves the idea.', related: ['artist-influence', 'artist-statement'] }),
   glossaryEntry({ id: 'artwork', term: 'artwork', domain: 'art', guide: 'ART-wurk', definition: 'A work created through artistic ideas, materials and choices.', visual: 'A physical work beside notes showing choices and influences.', example: 'The final artwork combines a natural force with signs of human impact.', related: ['artist', 'media', 'composition'] }),
@@ -340,7 +396,7 @@ const artEntries = [
   glossaryEntry({ id: 'artist-statement', term: 'artist statement', domain: 'art', guide: 'AR-tist STAYT-ment', definition: 'A short explanation of what inspired an artwork, what it shows and its message.', visual: 'Three linked prompts: inspired by, shows, message.', example: 'My work is inspired by ____. It shows ____. My message is ____.', related: ['artist', 'artist-influence', 'artwork'] }),
 ];
 
-export const GLOSSARY = Object.freeze([...geographyEntries, ...mathematicsEntries, ...scienceEntries, ...artEntries]);
+export const GLOSSARY = Object.freeze([...geographyEntries, ...mathematicsEntries, ...scienceEntries, ...climateEntries, ...artEntries]);
 
 export const REQUIRED_ATLAS_TERMS = Object.freeze([
   'Earth', 'planet', 'globe', 'map', 'atlas', 'continent', 'country', 'region', 'ocean',
@@ -369,6 +425,15 @@ export const REQUIRED_SCIENCE_TERMS = Object.freeze([
   'insect', 'arachnid', 'mollusc', 'annelid', 'crustacean', 'myriapod', 'habitat',
   'microhabitat', 'resource', 'shelter', 'condition', 'environment', 'environmental change',
   'danger', 'effect', 'prediction', 'uncertain', 'survey', 'tally', 'specimen',
+]);
+
+export const REQUIRED_CLIMATE_TERMS = Object.freeze([
+  'weather', 'climate', 'pattern', 'average', 'range', 'temperature', 'degrees Celsius',
+  'rainfall', 'millimetres', 'season', 'seasonality', 'climate zone', 'tropical', 'dry',
+  'temperate', 'continental', 'polar', 'latitude', 'equator', 'hemisphere', 'biome',
+  'vegetation', 'atmosphere', 'global warming', 'climate change', 'evidence', 'trend',
+  'variation', 'prediction', 'uncertainty', 'impact', 'adapt', 'adaptation', 'reduce',
+  'emissions', 'greenhouse gas', 'response', 'trade-off',
 ]);
 
 export function getGlossaryEntryById(id, entries = GLOSSARY) {

@@ -9,10 +9,11 @@ export function parseRoute(hash = globalThis.location?.hash || '') {
   if (name === 'collection' && parts[0]) return { name: 'collection', params: { keyId: parts[0] } };
   if (name === 'number-tool' && parts[0]) return { name: 'number-tool', params: { toolId: parts[0] } };
   if (name === 'science-tool' && parts[0]) return { name: 'science-tool', params: { toolId: parts[0] } };
+  if (name === 'climate-tool' && parts[0]) return { name: 'climate-tool', params: { toolId: parts[0] } };
   if (name === 'work' && parts[0]) return { name: 'work-detail', params: { artifactId: parts[0] } };
   if (name === 'print' && parts[0] === 'key-guide') return { name: 'key-guide', params: {} };
 
-  const supported = new Set(['atlas', 'numbers', 'living-things', 'keys', 'work', 'key', 'settings', 'maintenance']);
+  const supported = new Set(['atlas', 'numbers', 'living-things', 'climate', 'keys', 'work', 'key', 'settings', 'maintenance']);
   return supported.has(name) ? { name, params: {} } : DEFAULT_ROUTE;
 }
 
@@ -30,6 +31,8 @@ export function routeLabel(route) {
     'number-tool': 'Number Expedition tool',
     'living-things': 'Living Things Observatory',
     'science-tool': 'Living Things Observatory tool',
+    climate: 'Climate Laboratory',
+    'climate-tool': 'Climate Laboratory tool',
     keys: 'My Keys',
     work: 'My Work',
     'work-detail': 'Saved work',

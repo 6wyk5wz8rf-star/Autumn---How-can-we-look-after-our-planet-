@@ -59,16 +59,17 @@ const EXPECTED_ACTIVITY_IDS = [
   'understand-before-action',
 ];
 
-test('all ten destinations are registered while Build 3 activates Atlas, Number Expedition and Living Things Observatory', () => {
+test('all ten destinations are registered while Build 4 activates four calm destinations', () => {
   assert.equal(DESTINATIONS.length, 10);
   assert.deepEqual(DESTINATIONS.map(({ ordinal }) => ordinal), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   assert.equal(new Set(DESTINATIONS.map(({ id }) => id)).size, 10);
-  assert.deepEqual(getActiveDestinations().map(({ id }) => id), ['planet-atlas', 'number-expedition', 'living-things-observatory']);
+  assert.deepEqual(getActiveDestinations().map(({ id }) => id), ['planet-atlas', 'number-expedition', 'living-things-observatory', 'climate-laboratory']);
   assert.equal(getDestinationById('planet-atlas')?.route, '#/atlas');
   assert.equal(getDestinationById('tides-of-change-studio')?.activationBuild, 10);
   assert.equal(getDestinationById('number-expedition')?.active, true);
   assert.equal(getDestinationById('number-expedition')?.route, '#/numbers');
   assert.equal(getDestinationById('living-things-observatory')?.route, '#/living-things');
+  assert.equal(getDestinationById('climate-laboratory')?.route, '#/climate');
 });
 
 test('Planet Atlas exposes exactly eight substantial guided pathways', () => {
@@ -124,11 +125,11 @@ test('Living Things Observatory exposes 16 Year 4 pathways and active scientific
 test('the permanent key manifest is valid, unique and complete', () => {
   const validation = validateKeyManifest(KEY_MANIFEST);
   assert.equal(validation.valid, true, validation.errors.join('\n'));
-  assert.equal(KEY_MANIFEST.length, 72);
-  assert.equal(new Set(KEY_MANIFEST.map(({ code }) => code)).size, 72);
-  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.ACTIVITY).length, 52);
-  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.COLLECTION).length, 14);
-  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.DESTINATION).length, 3);
+  assert.equal(KEY_MANIFEST.length, 92);
+  assert.equal(new Set(KEY_MANIFEST.map(({ code }) => code)).size, 92);
+  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.ACTIVITY).length, 66);
+  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.COLLECTION).length, 19);
+  assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.DESTINATION).length, 4);
   assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.WORLD).length, 1);
   assert.equal(KEY_MANIFEST.filter(({ type }) => type === KEY_TYPES.MAINTENANCE).length, 2);
 

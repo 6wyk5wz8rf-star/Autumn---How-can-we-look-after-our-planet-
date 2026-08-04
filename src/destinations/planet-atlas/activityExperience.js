@@ -68,7 +68,7 @@ export function renderActivityView(activity, state, { savedBefore = false, scaff
     <header class="activity-banner">
       <div><p class="eyebrow">Key Activity</p><h1 id="activity-title">${escapeHTML(activity.title)}</h1></div>
       <div class="cluster no-print">
-        <button class="text-button" type="button" data-route="atlas">Back to Atlas</button>
+        <button class="text-button" type="button" data-action="return-from-context">← Back</button>
         <button class="icon-button" type="button" data-action="speak-activity-instructions" aria-label="Hear this activity’s instructions">♪</button>
       </div>
     </header>
@@ -76,6 +76,7 @@ export function renderActivityView(activity, state, { savedBefore = false, scaff
       <span><strong>${step + 1} of ${ACTIVITY_STAGE_COUNT}</strong> · ${escapeHTML(ACTIVITY_RHYTHM[step])}</span>
       <span class="activity-progress__line" style="--activity-progress:${((step + 1) / ACTIVITY_STAGE_COUNT) * 100}%" aria-hidden="true"></span>
     </div>
+    <details class="show-me no-print"><summary>Show me</summary><div><p><strong>Watch:</strong> Use one visible map clue before making an explanation.</p><p><strong>Example:</strong> “The Atlantic Ocean is west of Africa, so this coastline helps me locate it.”</p><p><strong>Your turn:</strong> Return to the map and point to the clue that supports your next decision.</p></div></details>
     <div class="activity-stage">
       <section class="activity-prompt paper-panel" aria-label="${escapeAttr(ACTIVITY_RHYTHM[step])}">
         ${content.prompt}
@@ -91,7 +92,7 @@ export function renderActivityView(activity, state, { savedBefore = false, scaff
       <span class="small muted"><span class="status-dot"></span>${savedBefore ? 'Earlier version safe' : 'Draft kept as you go'}</span>
       <div class="cluster">
         ${step > 0 ? '<button class="button secondary" type="button" data-action="previous-activity-step">Back</button>' : ''}
-        ${step < ACTIVITY_STAGE_COUNT - 1 ? '<button class="button" type="button" data-action="next-activity-step">Continue</button>' : `<button class="button" type="button" data-action="save-key-activity">${savedBefore ? 'Save a new version' : 'Save to My Work'}</button>`}
+        ${step < ACTIVITY_STAGE_COUNT - 1 ? '<button class="button" type="button" data-action="next-activity-step">Continue</button>' : `<button class="button" type="button" data-action="save-key-activity">${savedBefore ? 'Keep a new version' : 'Keep in My Work'}</button>`}
       </div>
     </div>
   </section>`;

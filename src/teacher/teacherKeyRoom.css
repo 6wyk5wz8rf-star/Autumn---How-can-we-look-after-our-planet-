@@ -53,13 +53,18 @@
   min-height: 44px;
 }
 
-.teacher-science-topics {
+.teacher-science-topics,
+.teacher-environment-shortcuts {
   grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
   gap: 0.45rem;
 }
+
+.teacher-environment-shortcuts { display: flex; flex-wrap: wrap; align-items: center; }
+.teacher-environment-shortcuts > span { margin-right: .25rem; font-size: .86rem; font-weight: 800; }
+.teacher-environment-shortcuts button,.teacher-science-topics button { min-height: 42px; padding: .45rem .7rem; border: 1px solid var(--line-strong, #7c7c7c); border-radius: 999px; background: var(--paper-light, #fbf8f1); }
+.teacher-environment-shortcuts button[aria-pressed="true"],.teacher-science-topics button[aria-pressed="true"] { background: var(--indigo, #30485f); color: #fff; }
+.teacher-science-topics summary { min-height: 44px; padding: .65rem .1rem; cursor: pointer; font-weight: 800; }
+.teacher-science-topics > div { display: flex; flex-wrap: wrap; gap: .45rem; }
 
 .teacher-science-topics > span {
   margin-right: 0.25rem;

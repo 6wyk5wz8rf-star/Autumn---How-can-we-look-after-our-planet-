@@ -2,7 +2,7 @@ import { getMetadata, removeMetadata, setMetadata } from '../services/db.js';
 import { getProductionTeacherKeys } from './teacherKeyManifest.js';
 
 export const TEACHER_KEY_PREFERENCES_KEY = 'teacher-key-room:device-preferences';
-export const TEACHER_KEY_PREFERENCES_SCHEMA_VERSION = 1;
+export const TEACHER_KEY_PREFERENCES_SCHEMA_VERSION = 2;
 export const MAX_TEACHER_FAVOURITES = 12;
 
 function idOf(key) {
@@ -27,8 +27,13 @@ export function sanitiseTeacherKeyPreferences(value = {}, manifest = []) {
     .filter((id) => allowed.has(id))
     .slice(0, MAX_TEACHER_FAVOURITES);
 
+  const recentDisplayedKeyIds = [...new Set((value.recentDisplayedKeyIds || []).map(String))]
+    .filter((id) => allowed.has(id))
+    .slice(0, 8);
+
   return Object.freeze({
     favouriteKeyIds: Object.freeze(favouriteKeyIds),
+    recentDisplayedKeyIds: Object.freeze(recentDisplayedKeyIds),
     showTitleOnBoard: value.showTitleOnBoard === undefined ? true : Boolean(value.showTitleOnBoard),
     schemaVersion: TEACHER_KEY_PREFERENCES_SCHEMA_VERSION,
   });
@@ -95,6 +100,18 @@ export class TeacherKeyPreferencesStore {
     this.preferences = sanitiseTeacherKeyPreferences({
       ...this.preferences,
       showTitleOnBoard,
+    }, this.manifest);
+    await this.write(this.storageKey, this.preferences);
+    return this.getSnapshot();
+  }
+
+  async recordDisplayed(keyId) {
+    const id = String(keyId ?? '');
+    const allowed = new Set(getProductionTeacherKeys(this.manifest).map(idOf));
+    if (!allowed.has(id)) return this.getSnapshot();
+    this.preferences = sanitiseTeacherKeyPreferences({
+      ...this.preferences,
+      recentDisplayedKeyIds: [id, ...(this.preferences.recentDisplayedKeyIds || []).filter((item) => item !== id)],
     }, this.manifest);
     await this.write(this.storageKey, this.preferences);
     return this.getSnapshot();

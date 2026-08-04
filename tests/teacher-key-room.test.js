@@ -169,16 +169,19 @@ test('teacher library is generated from active manifest records and supports use
   assert.ok(groupTeacherKeyLibrary(entries).find((group) => group.id === 'number-expedition'));
 });
 
-test('8584 science search and quick-topic filters come from the same Build 3 manifest', () => {
+test('8584 science search and quick-topic filters remain available in the Build 4 manifest', () => {
   const entries = createTeacherKeyLibrary(KEY_MANIFEST, { destinations: DESTINATIONS });
-  assert.equal(entries.length, 70);
+  assert.equal(entries.length, 90);
   for (const query of ['living things', 'vertebrate', 'invertebrate', 'classification', 'key', 'habitat', 'environmental change', 'organism', 'sorting']) {
     assert.ok(filterTeacherKeyLibrary(entries, { query }).length >= 1, `Teacher search should find ${query}`);
   }
   for (const topic of ['observation', 'grouping', 'vertebrates', 'invertebrates', 'classification keys', 'habitats', 'environmental change']) {
-    const matches = filterTeacherKeyLibrary(entries, { topic });
+    const matches = filterTeacherKeyLibrary(entries, { topic, subject: 'science' });
     assert.ok(matches.length >= 1, `Teacher topic should find ${topic}`);
     assert.ok(matches.every(({ subject }) => subject.id === 'science'));
+  }
+  for (const topic of ['weather climate', 'climate zones', 'climate experiments', 'climate biomes', 'global warming', 'climate response']) {
+    assert.ok(filterTeacherKeyLibrary(entries, { topic }).length >= 1, `Teacher topic should find ${topic}`);
   }
   const scienceActivities = filterTeacherKeyLibrary(entries, {
     subject: 'science',
@@ -203,7 +206,7 @@ test('teacher favourites are device-level, manifest constrained and backup-compa
   const defaults = await store.load();
   assert.ok(defaults.favouriteKeyIds.length > 0);
   await store.toggleFavourite('key-atlas-find-the-gambia');
-  assert.equal(saved.schemaVersion, 1);
+  assert.equal(saved.schemaVersion, 2);
   assert.equal(Object.hasOwn(saved, 'profileId'), false);
   await assert.rejects(store.toggleFavourite(TEACHER_KEY_ID), /active child pathway/);
 

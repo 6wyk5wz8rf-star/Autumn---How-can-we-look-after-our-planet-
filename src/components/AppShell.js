@@ -18,7 +18,7 @@ const NAV_ITEMS = [
 ];
 
 function currentNav(routeName) {
-  if (['home', 'atlas', 'numbers', 'number-tool', 'living-things', 'science-tool', 'activity'].includes(routeName)) return 'home';
+  if (['home', 'atlas', 'numbers', 'number-tool', 'living-things', 'science-tool', 'climate', 'climate-tool', 'activity'].includes(routeName)) return 'home';
   if (['work', 'work-detail'].includes(routeName)) return 'work';
   if (routeName === 'keys') return 'keys';
   if (routeName === 'key') return 'key';
@@ -40,12 +40,12 @@ export function renderShell({ route, profile, content, modal = '', persistenceWa
   const symbol = profile ? profileSymbolIcon(profile.symbol) : '◌';
   return `<div class="app-shell" data-route-name="${escapeAttr(route.name)}">
     <header class="app-header no-print">
-      <div class="brand-lockup" aria-label="Our Planet">
+      <button class="brand-lockup" type="button" data-route="home" aria-label="Return to Our Planet">
         <span class="brand-mark" aria-hidden="true">${icons.planet}</span>
         <span class="brand-copy">
           <span class="brand-title">Our Planet</span>
         </span>
-      </div>
+      </button>
       ${renderNavigation(route.name)}
       <div class="header-actions">
         <button class="icon-button" type="button" data-action="open-glossary" aria-label="Open the visual glossary" title="Visual glossary">${icons.glossary}</button>

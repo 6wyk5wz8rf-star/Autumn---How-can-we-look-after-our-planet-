@@ -234,8 +234,9 @@ test('touch, keyboard, responsive, high-contrast and reduced-motion contracts re
   assert.match(layoutCss, /@media\s*\(orientation:\s*landscape\)\s*and\s*\(max-height:\s*600px\)/);
 
   const home = mountTool(null);
-  const routeButtons = [...home.host.querySelectorAll('[data-route="number-tool"]')];
-  assert.equal(routeButtons.length, NUMBER_TOOLS.length);
+  const routeButtons = [...home.host.querySelectorAll('.destination-mode-nav [data-route="number-tool"]')];
+  assert.equal(routeButtons.length, 4);
+  assert.ok(home.host.querySelector('.destination-more-tools'));
   assert.ok(routeButtons.every((button) => button.tagName === 'BUTTON' && button.type === 'button'));
   home.close();
 

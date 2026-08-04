@@ -4,6 +4,7 @@ import './styles/components.css';
 import './destinations/planet-atlas/atlas.css';
 import './destinations/number-expedition/number-expedition.css';
 import './destinations/living-things/living-things.css';
+import './destinations/climate-laboratory/climate-laboratory.css';
 import './teacher/teacherKeyRoom.css';
 import './styles/print.css';
 import App from './app/App.js';

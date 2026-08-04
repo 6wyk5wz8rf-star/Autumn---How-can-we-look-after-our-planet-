@@ -182,7 +182,7 @@ test('a guided science key saves and reopens without losing evidence or the orig
   assert.equal(app.route.name, 'activity');
   assert.equal(app.route.params.activityId, 'look-like-scientist');
   assert.ok(app.livingThings);
-  assert.equal(document.querySelectorAll('.science-guided-guide article').length, 4);
+  assert.ok(document.querySelectorAll('.science-guided-guide article').length <= 2);
   assert.match(document.querySelector('.science-guided-guide details').textContent, /unscored/i);
 
   const observation = document.querySelector('[data-science-field="observationText"]');

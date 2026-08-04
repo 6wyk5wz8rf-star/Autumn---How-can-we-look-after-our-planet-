@@ -30,6 +30,7 @@ import {
 import { ACTIVITIES, getActivityById } from '../data/activities.js';
 import { getNumberTool } from '../data/numberExpedition.js';
 import { getScienceTool } from '../data/livingThings.js';
+import { getClimateTool } from '../data/climate.js';
 import { KEY_MANIFEST, getKeyByCode } from '../data/keys.js';
 import { DESTINATIONS } from '../data/destinations.js';
 import { GLOSSARY } from '../data/glossary.js';
@@ -69,6 +70,7 @@ import {
 } from '../services/artefacts.js';
 import { downloadBackup, importBackup } from '../services/backup.js';
 import { getSettings, updateSettings } from '../services/settings.js';
+import { getFlowPreferences, updateFlowPreferences } from '../services/flowPreferences.js';
 import { speak } from '../services/speech.js';
 import { createAudioObjectUrl, revokeAudioObjectUrl, startAudioRecording } from '../services/audio.js';
 import { registerServiceWorker, subscribeToNetworkStatus } from '../services/serviceWorker.js';
@@ -77,10 +79,14 @@ import {
   teacherKeySession,
 } from '../teacher/index.js';
 
-const APP_VERSION = 'build-3.0.0';
+const APP_VERSION = 'build-4.0.0';
 
 function renderNumberExpeditionHost({ toolId = null, activityId = null } = {}) {
   return `<div id="number-expedition" data-number-tool-id="${escapeAttr(toolId || '')}" data-number-activity-id="${escapeAttr(activityId || '')}"></div>`;
+}
+
+function renderClimateLaboratoryHost({ toolId = null, activityId = null } = {}) {
+  return `<div id="climate-laboratory" data-climate-tool-id="${escapeAttr(toolId || '')}" data-climate-activity-id="${escapeAttr(activityId || '')}"></div>`;
 }
 
 function delay(milliseconds) {
@@ -121,6 +127,25 @@ function settingsForView(settings) {
     motion: settings.reducedMotion ? 'reduced' : 'full',
     complexity: settings.reducedComplexity ? 'reduced' : 'full',
   };
+}
+
+function glossaryDomainForRoute(route) {
+  const activity = route?.name === 'activity' ? getActivityById(route.params?.activityId) : null;
+  const destinationId = activity?.destinationId || ({
+    atlas: 'planet-atlas',
+    numbers: 'number-expedition',
+    'number-tool': 'number-expedition',
+    'living-things': 'living-things-observatory',
+    'science-tool': 'living-things-observatory',
+    climate: 'climate-laboratory',
+    'climate-tool': 'climate-laboratory',
+  })[route?.name];
+  return ({
+    'planet-atlas': 'geography',
+    'number-expedition': 'mathematics',
+    'living-things-observatory': 'science',
+    'climate-laboratory': 'climate',
+  })[destinationId] || null;
 }
 
 function keyActivityIds(key) {
@@ -237,7 +262,8 @@ export class App {
     this.activityState = null;
     this.atlasOpenState = null;
     this.pendingAtlasFocus = null;
-    this.workFilter = 'all';
+    this.workFilter = 'recent';
+    this.flowPreferences = null;
     this.profileModalOpen = false;
     this.profileCreateMode = false;
     this.modalHTML = '';
@@ -250,12 +276,17 @@ export class App {
     this.livingThings = null;
     this.scienceOpenStates = new Map();
     this.scienceVoiceExplanation = null;
+    this.climateLaboratory = null;
+    this.climateOpenStates = new Map();
+    this.climateVoiceExplanation = null;
     this.teacherRoom = null;
     this.teacherPreviewActivityId = null;
     this.keyEntryOrigin = null;
+    this.contextReturnLocation = null;
     this.AtlasMapClass = null;
     this.NumberExpeditionClass = null;
     this.LivingThingsClass = null;
+    this.ClimateLaboratoryClass = null;
     this.keypad = null;
     this.recording = null;
     this.planetQuestionVoice = null;
@@ -332,6 +363,9 @@ export class App {
     const continuingScienceVoice = (nextRoute.name === 'science-tool' && this.route.name === 'science-tool' && nextRoute.params?.toolId === this.route.params?.toolId)
       || (nextRoute.name === 'activity' && this.route.name === 'activity' && nextRoute.params?.activityId === this.route.params?.activityId);
     if (!continuingScienceVoice) this.scienceVoiceExplanation = null;
+    const continuingClimateVoice = (nextRoute.name === 'climate-tool' && this.route.name === 'climate-tool' && nextRoute.params?.toolId === this.route.params?.toolId)
+      || (nextRoute.name === 'activity' && this.route.name === 'activity' && nextRoute.params?.activityId === this.route.params?.activityId);
+    if (!continuingClimateVoice) this.climateVoiceExplanation = null;
     if (nextRoute.name !== 'activity' || nextRoute.params?.activityId !== this.teacherPreviewActivityId) {
       this.teacherPreviewActivityId = null;
     }
@@ -346,14 +380,21 @@ export class App {
       ? 'atlas'
       : revision?.activityId?.startsWith('open-science-')
         ? 'science-tool'
+        : revision?.activityId?.startsWith('open-climate-')
+          ? 'climate-tool'
         : revision?.activityId
           ? 'activity'
           : null;
     const stillRevising = expectedRoute === nextRoute.name
       && (nextRoute.name !== 'activity' || nextRoute.params.activityId === revision?.activityId)
-      && (nextRoute.name !== 'science-tool' || nextRoute.params.toolId === revision?.content?.scienceState?.toolId);
+      && (nextRoute.name !== 'science-tool' || nextRoute.params.toolId === revision?.content?.scienceState?.toolId)
+      && (nextRoute.name !== 'climate-tool' || nextRoute.params.toolId === revision?.content?.climateState?.toolId);
     if (!stillRevising) this.revisingArtifactId = null;
     this.route = nextRoute;
+    if (this.profile && ['atlas', 'numbers', 'number-tool', 'living-things', 'science-tool', 'climate', 'climate-tool'].includes(nextRoute.name)) {
+      const destinationId = ({ atlas: 'planet-atlas', numbers: 'number-expedition', 'number-tool': 'number-expedition', 'living-things': 'living-things-observatory', 'science-tool': 'living-things-observatory', climate: 'climate-laboratory', 'climate-tool': 'climate-laboratory' })[nextRoute.name];
+      void updateFlowPreferences(this.profile.id, { recentDestinationId: destinationId, recentRoute: nextRoute }).catch(() => {});
+    }
     this.modalHTML = '';
     this.glossaryOpen = false;
     await this.prepareRoute();
@@ -385,7 +426,7 @@ export class App {
         return;
       }
       const savedDraft = teacherPreview ? null : await getActivityState(this.profile.id, activity.id);
-      this.activityState = ['number-expedition', 'living-things-observatory'].includes(activity.destinationId)
+      this.activityState = ['number-expedition', 'living-things-observatory', 'climate-laboratory'].includes(activity.destinationId)
         ? (savedDraft?.state || null)
         : normaliseActivityState(activity, savedDraft?.state);
       if (!teacherPreview && this.lastRouteSignature !== `activity:${activity.id}`) {
@@ -409,7 +450,11 @@ export class App {
 
   async loadProfileData() {
     if (!this.profile) return;
-    this.settings = await getSettings(this.profile.id);
+    [this.settings, this.flowPreferences] = await Promise.all([
+      getSettings(this.profile.id),
+      getFlowPreferences(this.profile.id),
+    ]);
+    this.workFilter = this.flowPreferences.myWorkView;
     this.applySettings();
     await syncGrantedActivities(this.profile.id, ACTIVITIES);
     const [access, artefacts, responses] = await Promise.all([
@@ -489,7 +534,7 @@ export class App {
 
   renderRoute(route) {
     switch (route.name) {
-      case 'atlas': return renderAtlasView();
+      case 'atlas': return renderAtlasView({ returnToContext: Boolean(this.contextReturnLocation) });
       case 'numbers': return renderNumberExpeditionHost();
       case 'number-tool': return getNumberTool(route.params.toolId)
         ? renderNumberExpeditionHost({ toolId: route.params.toolId })
@@ -498,6 +543,10 @@ export class App {
       case 'science-tool': return getScienceTool(route.params.toolId)
         ? renderLivingThingsHost({ toolId: route.params.toolId })
         : renderLivingThingsHost();
+      case 'climate': return renderClimateLaboratoryHost({ toolId: 'temperature-rainfall-lab' });
+      case 'climate-tool': return getClimateTool(route.params.toolId)
+        ? renderClimateLaboratoryHost({ toolId: route.params.toolId })
+        : renderClimateLaboratoryHost({ toolId: 'temperature-rainfall-lab' });
       case 'keys': return renderKeysView({ activities: ACTIVITIES, access: this.access, artifacts: this.artifacts });
       case 'collection': {
         const key = KEY_MANIFEST.find((entry) => entry.id === route.params.keyId && entry.type === 'collection');
@@ -525,6 +574,9 @@ export class App {
         if (activity?.destinationId === 'living-things-observatory') {
           return renderLivingThingsHost({ toolId: activity.toolId, activityId: activity.id });
         }
+        if (activity?.destinationId === 'climate-laboratory') {
+          return renderClimateLaboratoryHost({ toolId: activity.toolId, activityId: activity.id });
+        }
         return activity ? renderActivityView(activity, this.activityState || defaultActivityState(activity), {
           savedBefore: saved,
           scaffold: this.settings?.scaffold || 'core',
@@ -534,7 +586,8 @@ export class App {
       default: {
         const latestAccess = this.access[0];
         const recentActivity = latestAccess ? getActivityById(latestAccess.activityId) : null;
-        return renderHomeView({ profile: this.profile, recentActivity, workCount: this.artifacts.length });
+        const recentWork = [...this.artifacts].sort((left, right) => new Date(right.updatedAt || right.createdAt) - new Date(left.updatedAt || left.createdAt))[0] || null;
+        return renderHomeView({ profile: this.profile, recentActivity, recentWork, workCount: this.artifacts.length });
       }
     }
   }
@@ -547,10 +600,12 @@ export class App {
     if (route.name === 'atlas') await this.mountOpenAtlas();
     if (route.name === 'numbers' || route.name === 'number-tool') await this.mountNumberExpedition(route);
     if (route.name === 'living-things' || route.name === 'science-tool') await this.mountLivingThings(route);
+    if (route.name === 'climate' || route.name === 'climate-tool') await this.mountClimateLaboratory(route);
     if (route.name === 'activity') {
       const activity = getActivityById(route.params.activityId);
       if (activity?.destinationId === 'number-expedition') await this.mountNumberExpedition(route, activity);
       else if (activity?.destinationId === 'living-things-observatory') await this.mountLivingThings(route, activity);
+      else if (activity?.destinationId === 'climate-laboratory') await this.mountClimateLaboratory(route, activity);
       else await this.mountActivityAtlas();
     }
     if (route.name === 'maintenance') await this.mountTeacherKeyRoom();
@@ -568,6 +623,8 @@ export class App {
     this.numberExpedition = null;
     this.livingThings?.destroy();
     this.livingThings = null;
+    this.climateLaboratory?.destroy();
+    this.climateLaboratory = null;
     this.teacherRoom?.destroy();
     this.teacherRoom = null;
     this.audioUrls.forEach((url) => revokeAudioObjectUrl(url));
@@ -689,6 +746,14 @@ export class App {
     return this.LivingThingsClass;
   }
 
+  async getClimateLaboratoryClass() {
+    if (!this.ClimateLaboratoryClass) {
+      const module = await import('../destinations/climate-laboratory/ClimateLaboratory.js');
+      this.ClimateLaboratoryClass = module.default;
+    }
+    return this.ClimateLaboratoryClass;
+  }
+
   async mountOpenAtlas() {
     const host = this.root.querySelector('#atlas-map');
     if (!host) return;
@@ -749,6 +814,7 @@ export class App {
       activity,
       savedState: activity ? this.activityState : this.numberOpenStates.get(toolId),
       scaffold: this.settings?.scaffold || 'core',
+      returnToContext: Boolean(this.contextReturnLocation),
       onChange: (state) => {
         if (activity && this.teacherPreviewActivityId !== activity.id) {
           this.activityState = state;
@@ -776,6 +842,7 @@ export class App {
       activity,
       savedState: activity ? this.activityState : this.scienceOpenStates.get(toolId),
       scaffold: this.settings?.scaffold || 'core',
+      returnToContext: Boolean(this.contextReturnLocation),
       onChange: (state) => {
         if (activity && this.teacherPreviewActivityId !== activity.id) {
           this.activityState = state;
@@ -787,6 +854,35 @@ export class App {
         }
       },
       onSave: (payload, state) => this.saveScienceWork(payload, state),
+      onSpeak: (text) => this.speakVisible(text),
+      onRecord: (button) => this.toggleVoiceRecording(button),
+      onToast: (message) => this.toast(message),
+    });
+  }
+
+  async mountClimateLaboratory(route, activity = null) {
+    const host = this.root.querySelector('#climate-laboratory');
+    if (!host) return;
+    const ClimateLaboratory = await this.getClimateLaboratoryClass();
+    if (!host.isConnected) return;
+    const toolId = activity?.toolId || route.params?.toolId || 'temperature-rainfall-lab';
+    this.climateLaboratory = new ClimateLaboratory(host, {
+      toolId,
+      activity,
+      savedState: activity ? this.activityState : this.climateOpenStates.get(toolId),
+      scaffold: this.settings?.scaffold || 'core',
+      returnToContext: Boolean(this.contextReturnLocation),
+      onChange: (state) => {
+        if (activity && this.teacherPreviewActivityId !== activity.id) {
+          this.activityState = state;
+          this.scheduleActivityStateSave();
+        } else if (activity) {
+          this.activityState = state;
+        } else {
+          this.climateOpenStates.set(toolId, state);
+        }
+      },
+      onSave: (payload, state) => this.saveClimateWork(payload, state),
       onSpeak: (text) => this.speakVisible(text),
       onRecord: (button) => this.toggleVoiceRecording(button),
       onToast: (message) => this.toast(message),
@@ -864,7 +960,8 @@ export class App {
       const returnLocation = this.keyEntryOrigin || (this.route.name === 'key' ? { name: 'home', params: {} } : this.route);
       teacherKeySession.open({ returnLocation });
       this.maintenanceUnlocked = true;
-      this.keyEntryOrigin = null;
+    this.keyEntryOrigin = null;
+    this.contextReturnLocation = null;
       keypad.setMessage('Teacher Key Room is ready.', 'success');
       await delay(320);
       navigate('maintenance');
@@ -877,12 +974,23 @@ export class App {
       keypad.setMessage(`${key.childFacingTitle || key.title} is ready.`, 'success');
       await delay(420);
       const activityIds = keyActivityIds(key);
-      if (key.type === 'activity' && activityIds[0]) navigate('activity', activityIds[0]);
-      else if (key.type === 'collection') navigate('collection', key.id);
-      else if (key.type === 'destination' && key.destinationId === 'number-expedition') navigate('numbers');
-      else if (key.type === 'destination' && key.destinationId === 'living-things-observatory') navigate('living-things');
-      else if (key.type === 'destination' && key.destinationId === 'planet-atlas') navigate('atlas');
-      else if (key.type === 'world') navigate('home');
+      if (key.type === 'activity' && activityIds[0]) {
+        this.contextReturnLocation = this.keyEntryOrigin || { name: 'home', params: {} };
+        this.keyEntryOrigin = null;
+        navigate('activity', activityIds[0]);
+      }
+      else if (key.type === 'collection') {
+        this.contextReturnLocation = this.keyEntryOrigin || { name: 'keys', params: {} };
+        this.keyEntryOrigin = null;
+        navigate('collection', key.id);
+      }
+      else if (key.type === 'destination' || key.type === 'world') {
+        const returnLocation = this.keyEntryOrigin;
+        this.keyEntryOrigin = null;
+        this.pendingToast = `${key.childFacingTitle || key.title} was added to My Keys.`;
+        if (returnLocation && !['key', 'maintenance'].includes(returnLocation.name)) this.restoreRouteLocation(returnLocation);
+        else navigate('keys');
+      }
       else {
         this.pendingToast = `${key.childFacingTitle || key.title} has been added to My Keys.`;
         navigate('keys');
@@ -898,12 +1006,41 @@ export class App {
     const routeButton = event.target.closest('[data-route]');
     if (routeButton) {
       event.preventDefault();
+      const returnToContext = routeButton.dataset.returnToContext === 'true';
+      if (returnToContext) {
+        this.contextReturnLocation = { name: this.route.name, params: { ...(this.route.params || {}) } };
+      } else if (!(routeButton.dataset.route === 'activity' || (routeButton.dataset.route === 'work' && routeButton.dataset.routeValue))) {
+        this.contextReturnLocation = null;
+      }
       if (routeButton.dataset.route === 'atlas' && routeButton.dataset.atlasFocus) {
         this.pendingAtlasFocus = ({ 'river-gambia': 'gambia', 'atlantic-ocean': 'world' })[routeButton.dataset.atlasFocus]
           || routeButton.dataset.atlasFocus;
       }
+      if (routeButton.dataset.route === 'number-tool' && routeButton.dataset.routeValue) {
+        const numericFields = {
+          numberStart: 'start',
+          numberEnd: 'end',
+          numberValue: 'value',
+          numberRoundingUnit: 'roundingUnit',
+          numberLeft: 'left',
+          numberRight: 'right',
+        };
+        const prefill = Object.fromEntries(Object.entries(numericFields)
+          .filter(([datasetField]) => routeButton.dataset[datasetField] !== undefined && Number.isFinite(Number(routeButton.dataset[datasetField])))
+          .map(([datasetField, stateField]) => [stateField, Number(routeButton.dataset[datasetField])]));
+        if (Object.keys(prefill).length) {
+          const toolId = routeButton.dataset.routeValue;
+          this.numberOpenStates.set(toolId, { ...(this.numberOpenStates.get(toolId) || {}), ...prefill });
+        }
+      }
       if (routeButton.dataset.route === 'key' && this.route.name !== 'key') {
         this.keyEntryOrigin = { name: this.route.name, params: { ...(this.route.params || {}) } };
+      }
+      if (routeButton.dataset.route === 'activity' && this.route.name !== 'activity') {
+        this.contextReturnLocation = { name: this.route.name, params: { ...(this.route.params || {}) } };
+      }
+      if (routeButton.dataset.route === 'work' && routeButton.dataset.routeValue && this.route.name !== 'work-detail') {
+        this.contextReturnLocation = { name: this.route.name, params: { ...(this.route.params || {}) } };
       }
       navigate(routeButton.dataset.route, routeButton.dataset.routeValue);
       return;
@@ -960,6 +1097,9 @@ export class App {
     if (button.dataset.mapTool) await this.handleMapTool(button.dataset.mapTool);
     if (button.dataset.workFilter) {
       this.workFilter = button.dataset.workFilter;
+      if (this.profile) {
+        this.flowPreferences = await updateFlowPreferences(this.profile.id, { myWorkView: this.workFilter });
+      }
       await this.render({ preserveFocus: true });
     }
     if (button.dataset.setting) await this.changeSetting(button.dataset.setting, button.dataset.value);
@@ -1021,6 +1161,18 @@ export class App {
       },
       'close-glossary': () => this.closeGlossary(),
       'close-modal': () => this.closeModal(),
+      'return-from-context': () => {
+        const destinationId = this.route.name === 'activity' ? getActivityById(this.route.params.activityId)?.destinationId : null;
+        const fallback = ({
+          'planet-atlas': { name: 'atlas', params: {} },
+          'number-expedition': { name: 'numbers', params: {} },
+          'living-things-observatory': { name: 'living-things', params: {} },
+          'climate-laboratory': { name: 'climate', params: {} },
+        })[destinationId] || { name: 'home', params: {} };
+        const returnLocation = this.contextReturnLocation || fallback;
+        this.contextReturnLocation = null;
+        this.restoreRouteLocation(returnLocation);
+      },
       'speak-text': () => this.speakVisible(button.dataset.speak || ''),
       'speak-activity-instructions': () => this.speakActivityInstructions(),
       'save-atlas-question': async () => {
@@ -1070,6 +1222,16 @@ export class App {
   }
 
   onInput(event) {
+    if (event.target.matches('[data-key-library-search]')) {
+      const query = event.target.value.trim().toLowerCase();
+      this.root.querySelectorAll('[data-key-search-text]').forEach((row) => {
+        row.hidden = Boolean(query) && !row.dataset.keySearchText.includes(query);
+      });
+      this.root.querySelectorAll('[data-key-environment]').forEach((section) => {
+        section.hidden = Boolean(query) && !section.querySelector('[data-key-search-text]:not([hidden])');
+      });
+      return;
+    }
     const field = event.target.closest('[data-draft-field]');
     if (field && this.activityState) {
       this.activityState[field.dataset.draftField] = field.value;
@@ -1166,7 +1328,7 @@ export class App {
   mountGlossary() {
     const layer = this.root.querySelector('#popover-layer');
     if (!layer) return;
-    layer.innerHTML = renderGlossary(GLOSSARY);
+    layer.innerHTML = renderGlossary(GLOSSARY, { preferredDomain: glossaryDomainForRoute(this.route) });
     requestAnimationFrame(() => layer.querySelector('input')?.focus());
   }
 
@@ -1384,6 +1546,47 @@ export class App {
     navigate('work', record.id);
   }
 
+  async saveClimateWork(payload, state) {
+    if (!this.profile || !payload?.structuredContent?.climateState) return;
+    if (payload.keyActivityId && payload.keyActivityId === this.teacherPreviewActivityId) {
+      this.toast('Teacher preview is not attached to a learner. Enter the activity key in Children’s View to keep work.');
+      return;
+    }
+    const activity = payload.keyActivityId ? getActivityById(payload.keyActivityId) : null;
+    const revisionTarget = this.revisingArtifactId
+      ? this.artifacts.find((item) => item.id === this.revisingArtifactId && item.destinationId === 'climate-laboratory')
+      : null;
+    const existing = revisionTarget || (activity
+      ? this.artifacts.find((item) => item.activityId === activity.id && item.artefactType === payload.artefactType && !item.parentVersionId)
+      : null);
+    const changes = {
+      ...payload,
+      voiceExplanation: activity ? this.activityState?.voiceExplanation || null : this.climateVoiceExplanation,
+      structuredContent: {
+        ...payload.structuredContent,
+        climateState: state || payload.structuredContent.climateState,
+        savedAt: new Date().toISOString(),
+      },
+    };
+    const record = existing
+      ? await updateArtefact(this.profile.id, existing.id, changes, { reason: 'revisited climate investigation' })
+      : await createArtefact(this.profile.id, changes);
+    if (activity) {
+      await linkArtefactToActivityAccess(this.profile.id, activity.id, record.id);
+      await recordActivityVisit(this.profile.id, activity, { savedArtefactId: record.id });
+    }
+    this.revisingArtifactId = null;
+    this.climateVoiceExplanation = null;
+    await this.loadProfileData();
+    this.pendingToast = existing
+      ? 'A new climate version was kept. The earlier thinking is still available.'
+      : this.persistenceIsDurable()
+        ? 'Your climate investigation is safe in My Work.'
+        : 'This investigation is saved for this open session. Export a backup before closing.';
+    this.contextReturnLocation = { name: 'work', params: {} };
+    navigate('work', record.id);
+  }
+
   async saveKeyActivity() {
     if (!this.profile || !this.activityState) return;
     if (this.activityState.activityId === this.teacherPreviewActivityId) {
@@ -1494,7 +1697,9 @@ export class App {
           ? `number-tool:${this.route.params.toolId}`
           : this.route.name === 'science-tool'
             ? `science-tool:${this.route.params.toolId}`
-            : 'unknown';
+            : this.route.name === 'climate-tool' || this.route.name === 'climate'
+              ? `climate-tool:${this.route.params?.toolId || 'temperature-rainfall-lab'}`
+              : 'unknown';
     if (this.recording) {
       if (this.recording.context !== context || this.recording.profileId !== this.profile?.id) {
         await this.cancelActiveRecording();
@@ -1510,7 +1715,9 @@ export class App {
             ? activeRecording.context === `activity:${this.route.params.activityId}`
             : activeRecording.context.startsWith('science-tool:')
               ? activeRecording.context === `science-tool:${this.route.params.toolId}`
-              : activeRecording.context === `number-tool:${this.route.params.toolId}`);
+              : activeRecording.context.startsWith('climate-tool:')
+                ? activeRecording.context === `climate-tool:${this.route.params?.toolId || 'temperature-rainfall-lab'}`
+                : activeRecording.context === `number-tool:${this.route.params.toolId}`);
       if (result.status === 'finished' && contextStillActive) {
         if (context === 'planet-question') this.planetQuestionVoice = result.blob;
         if (context.startsWith('activity:') && this.activityState?.activityId === context.slice('activity:'.length)) {
@@ -1519,6 +1726,7 @@ export class App {
         }
         if (context.startsWith('number-tool:')) this.numberVoiceExplanation = result.blob;
         if (context.startsWith('science-tool:')) this.scienceVoiceExplanation = result.blob;
+        if (context.startsWith('climate-tool:')) this.climateVoiceExplanation = result.blob;
         button.textContent = 'Record again';
         if (status) status.textContent = `Voice saved locally · ${Math.max(1, Math.round(result.durationMs / 1000))} seconds`;
       }
@@ -1572,6 +1780,8 @@ export class App {
         ? { ...(artifact.content?.modelState || {}), activityId: activity.id, toolId: activity.toolId }
         : activity.destinationId === 'living-things-observatory'
           ? { ...(artifact.content?.scienceState || {}), activityId: activity.id, toolId: activity.toolId }
+          : activity.destinationId === 'climate-laboratory'
+            ? { ...(artifact.content?.climateState || {}), activityId: activity.id, toolId: activity.toolId }
           : { ...normaliseActivityState(activity, artifact.content), step: 1 };
       await saveActivityState(this.profile.id, activity.id, this.activityState, { destinationId: activity.destinationId });
       this.pendingToast = 'The original is safe. Changes will become a new version when you save.';
@@ -1595,6 +1805,16 @@ export class App {
         this.scienceOpenStates.set(toolId, artifact.content.scienceState);
         this.pendingToast = 'The original is safe. Saving will create a new scientific version.';
         navigate('science-tool', toolId);
+        return;
+      }
+    }
+    if (artifact.destinationId === 'climate-laboratory' && artifact.content?.climateState) {
+      const toolId = artifact.content.climateState.toolId;
+      if (getClimateTool(toolId)) {
+        this.revisingArtifactId = artifact.id;
+        this.climateOpenStates.set(toolId, artifact.content.climateState);
+        this.pendingToast = 'The original is safe. Keeping this will create a new climate version.';
+        navigate('climate-tool', toolId);
         return;
       }
     }
@@ -1673,6 +1893,7 @@ export class App {
     else if (route.name === 'work-detail' && route.params?.artifactId) navigate('work', route.params.artifactId);
     else if (route.name === 'number-tool' && route.params?.toolId) navigate('number-tool', route.params.toolId);
     else if (route.name === 'science-tool' && route.params?.toolId) navigate('science-tool', route.params.toolId);
+    else if (route.name === 'climate-tool' && route.params?.toolId) navigate('climate-tool', route.params.toolId);
     else navigate(route.name || 'home');
   }
 
@@ -1695,6 +1916,7 @@ export class App {
     else if (key.type === 'collection') navigate('collection', key.id);
     else if (key.destinationId === 'number-expedition') navigate('numbers');
     else if (key.destinationId === 'living-things-observatory') navigate('living-things');
+    else if (key.destinationId === 'climate-laboratory') navigate('climate');
     else if (key.destinationId === 'planet-atlas') navigate('atlas');
     else navigate('home');
   }

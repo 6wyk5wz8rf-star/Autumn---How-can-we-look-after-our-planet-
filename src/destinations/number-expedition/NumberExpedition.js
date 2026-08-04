@@ -1,9 +1,5 @@
 import { escapeAttr, escapeHTML } from '../../utils/dom.js';
-import {
-  NUMBER_REGIONS,
-  NUMBER_TOOLS,
-  getNumberTool,
-} from '../../data/numberExpedition.js';
+import { getNumberTool } from '../../data/numberExpedition.js';
 import {
   PLACE_VALUE_PLACES,
   comparePlaceValue,
@@ -368,8 +364,20 @@ function renderBoardView(state, tool) {
   return `<section class="board-view" role="dialog" aria-modal="true" aria-labelledby="board-title"><header><div><p>TODAY’S MODEL</p><h1 id="board-title">${escapeHTML(tool.title)}</h1></div><button type="button" data-number-action="close-board" aria-label="Exit Board View">Exit</button></header><main>${renderWorkspaceModel(state, tool, { board: true })}</main><footer><button type="button" data-number-action="board-previous">Previous step</button><button type="button" data-number-action="toggle-labels">${state.labelsVisible ? 'Hide labels' : 'Show labels'}</button><button type="button" data-number-action="board-next">Next step</button><button type="button" data-number-action="toggle-answer">${state.answerRevealed ? 'Hide answer' : 'Reveal answer'}</button><label>Board note<input type="text" maxlength="120" value="${escapeAttr(state.annotation || '')}" data-number-text="annotation"/></label></footer></section>`;
 }
 
-function renderExpeditionHome() {
-  return `<section class="number-field-station" aria-labelledby="numbers-title"><div class="number-intro"><div><p class="eyebrow">Open exploration · no key needed</p><h1 id="numbers-title">Number Expedition</h1><p class="lede">Build it. Move it. Test what stays true.</p></div><div class="instrument-mark" aria-hidden="true"><span>1</span><span>10</span><span>100</span><span>1,000</span></div></div><div class="region-path">${NUMBER_REGIONS.map((region) => `<section class="number-region" data-accent="${region.accent}"><div class="region-mark" aria-hidden="true">${region.mark}</div><div><h2>${region.title}</h2><p>${region.description}</p></div><div class="region-tools">${NUMBER_TOOLS.filter((tool) => tool.regionId === region.id).map((tool) => `<button type="button" data-route="number-tool" data-route-value="${tool.id}"><span>${tool.title}</span><small>${tool.invitation}</small></button>`).join('')}</div></section>`).join('')}</div></section>`;
+const NUMBER_PRIMARY_MODES = Object.freeze([
+  { id: 'build', title: 'Build', mark: '▦', toolIds: ['build-number', 'partition-number', 'more-less-stepper'] },
+  { id: 'compare', title: 'Compare', mark: '↔', toolIds: ['compare-numbers', 'order-numbers', 'open-number-line', 'rounding-tool', 'estimate-calculation', 'negative-number-line'] },
+  { id: 'calculate', title: 'Calculate', mark: '±', toolIds: ['addition-model', 'subtraction-model', 'strategy-comparator'] },
+  { id: 'reason', title: 'Reason', mark: '◇', toolIds: ['inverse-builder', 'problem-modeller', 'statement-tester', 'create-challenge', 'roman-builder'] },
+]);
+
+function numberPrimaryMode(toolId) {
+  return NUMBER_PRIMARY_MODES.find(({ toolIds }) => toolIds.includes(toolId)) || NUMBER_PRIMARY_MODES[0];
+}
+
+function renderNumberModes(tool) {
+  const current = numberPrimaryMode(tool.id);
+  return `<nav class="destination-mode-nav no-print" aria-label="Number Expedition modes">${NUMBER_PRIMARY_MODES.map((mode) => `<button type="button" data-route="number-tool" data-route-value="${mode.toolIds[0]}" aria-current="${mode.id === current.id ? 'page' : 'false'}"><span aria-hidden="true">${mode.mark}</span><strong>${mode.title}</strong></button>`).join('')}</nav><details class="destination-more-tools no-print"><summary>More tools</summary><div>${current.toolIds.map((toolId) => { const item = getNumberTool(toolId); return `<button type="button" data-route="number-tool" data-route-value="${item.id}" aria-current="${item.id === tool.id ? 'true' : 'false'}"><strong>${escapeHTML(item.title)}</strong><span>${escapeHTML(item.invitation)}</span></button>`; }).join('')}</div></details>`;
 }
 
 function mathematicalValues(state = {}) {
@@ -458,11 +466,12 @@ function applyGeneratedTask(state, task) {
 }
 
 export class NumberExpedition {
-  constructor(host, { toolId = null, activity = null, savedState = null, scaffold = 'core', onChange, onSave, onSpeak, onToast } = {}) {
+  constructor(host, { toolId = null, activity = null, savedState = null, scaffold = 'core', returnToContext = false, onChange, onSave, onSpeak, onToast } = {}) {
     this.host = host;
     this.activity = activity;
-    this.tool = getNumberTool(toolId || activity?.toolId);
+    this.tool = getNumberTool(toolId || activity?.toolId || 'build-number') || getNumberTool('build-number');
     this.scaffold = scaffold;
+    this.returnToContext = returnToContext;
     this.onChange = onChange;
     this.onSave = onSave;
     this.onSpeak = onSpeak;
@@ -783,19 +792,20 @@ export class NumberExpedition {
   }
 
   render() {
-    if (!this.tool) {
-      this.host.innerHTML = renderExpeditionHome();
-      return;
-    }
-    const region = NUMBER_REGIONS.find((item) => item.id === this.tool.regionId);
+    const returnControl = this.activity || this.returnToContext
+      ? '<button class="text-button" type="button" data-action="return-from-context">← Back</button>'
+      : '<button class="text-button" type="button" data-route="home">← Our Planet</button>';
     this.host.innerHTML = `<section class="number-workspace" data-mode="${this.tool.mode}" aria-labelledby="number-workspace-title">
-      <header class="number-workspace-head"><div><p class="eyebrow">${this.activity ? `${region.title} · guided pathway` : `${region.title} · open tool`}</p><h1 id="number-workspace-title">${escapeHTML(this.activity?.title || this.tool.title)}</h1><p class="lede">${escapeHTML(this.activity?.shortInvitation || this.tool.invitation)}</p></div><div class="workspace-actions no-print"><button type="button" class="button secondary" data-route="numbers">All regions</button><button type="button" class="button tonal" data-number-action="open-board">Board View</button></div></header>
+      <header class="number-workspace-head">${returnControl}<div><p class="eyebrow">${this.activity ? 'Guided Key Activity' : 'Number Expedition · open exploration'}</p><h1 id="number-workspace-title">${escapeHTML(this.activity?.title || 'Number Expedition')}</h1><p class="lede">${escapeHTML(this.activity?.shortInvitation || this.tool.invitation)}</p></div><div class="workspace-actions no-print"><span class="small muted">Draft saves quietly</span><button type="button" class="button tonal" data-number-action="open-board">Board View</button></div></header>
+      ${renderNumberModes(this.tool)}
+      <div class="destination-tool-title"><p class="eyebrow">${escapeHTML(numberPrimaryMode(this.tool.id).title)}</p><h2>${escapeHTML(this.tool.title)}</h2></div>
       ${this.activity ? `<section class="guided-notice"><span>Notice</span><p>${escapeHTML(this.activity.curriculumObjective)}</p><button type="button" data-action="speak-text" data-speak="${escapeAttr(this.activity.curriculumObjective)}" aria-label="Hear the mathematical invitation">♪</button></section>` : ''}
       ${this.state.generatedPrompt ? `<p class="generated-invitation"><strong>Try this</strong> ${escapeHTML(this.state.generatedPrompt)}</p>` : ''}<div class="maths-instrument-panel">
         <div class="instrument-toolbar no-print"><button type="button" data-number-action="undo" ${this.history.length ? '' : 'disabled'}>Undo</button><button type="button" data-number-action="redo" ${this.future.length ? '' : 'disabled'}>Redo</button><button type="button" data-number-action="new-challenge">New values</button><button type="button" data-number-action="toggle-answer">${this.state.answerRevealed ? 'Hide answer' : 'Reveal'}</button><button type="button" data-number-action="speak-number">Hear number</button></div>
         ${renderWorkspaceModel(this.state, this.tool)}
       </div>
-      <section class="make-explain"><div><p class="eyebrow">Make & explain</p><h2>What structure did you use?</h2>${this.activity?.scaffoldBehaviour?.[this.scaffold] ? `<p class="scaffold-cue">${escapeHTML(this.activity.scaffoldBehaviour[this.scaffold])}</p>` : ''}</div><label><span>My mathematical explanation <small>optional</small></span><textarea maxlength="700" data-number-text="explanation" placeholder="I noticed… so I… because…">${escapeHTML(this.state.explanation || '')}</textarea></label><div class="voice-explanation no-print"><button class="button secondary" type="button" data-action="start-voice-response">Record my explanation</button><span class="small muted" data-audio-recorder-status>Voice is optional.</span></div>${this.activity?.keyCheck ? `<details><summary>Key Check <small>optional · unscored</small></summary><p>${escapeHTML(this.activity.keyCheck.prompt)}</p></details>` : ''}<div class="cluster no-print"><button type="button" class="button" data-number-action="save">Save to My Work</button><button type="button" class="button secondary" data-action="print-page">Print</button></div></section>
+      <details class="show-me no-print"><summary>Show me</summary><div><p><strong>Watch:</strong> Change one value and notice which representations must change with it.</p><p><strong>Example:</strong> 10 hundreds exchange for 1 thousand without changing the total.</p><p><strong>Your turn:</strong> Make one change, then return to explain what stayed equal.</p></div></details>
+      <section class="make-explain"><div><p class="eyebrow">Make & explain</p><h2>What structure did you use?</h2>${this.activity?.scaffoldBehaviour?.[this.scaffold] ? `<p class="scaffold-cue">${escapeHTML(this.activity.scaffoldBehaviour[this.scaffold])}</p>` : ''}</div><label><span>My mathematical explanation <small>optional</small></span><textarea maxlength="700" data-number-text="explanation" placeholder="I noticed… so I… because…">${escapeHTML(this.state.explanation || '')}</textarea></label><div class="voice-explanation no-print"><button class="button secondary" type="button" data-action="start-voice-response">Record my explanation</button><span class="small muted" data-audio-recorder-status>Voice is optional.</span></div>${this.activity?.keyCheck ? `<details><summary>Key Check <small>optional · unscored</small></summary><p>${escapeHTML(this.activity.keyCheck.prompt)}</p></details>` : ''}<div class="cluster no-print"><button type="button" class="button" data-number-action="save">Keep in My Work</button><details class="quiet-actions"><summary>More</summary><button type="button" class="button secondary" data-action="print-page">Print</button></details></div></section>
       ${this.state.boardOpen ? renderBoardView(this.state, this.tool) : ''}
     </section>`;
     const board = this.host.querySelector('.board-view');

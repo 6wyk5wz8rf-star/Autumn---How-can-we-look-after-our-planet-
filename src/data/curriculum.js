@@ -1,5 +1,6 @@
 import { NUMBER_CURRICULUM_RECORDS } from './numberExpedition.js';
 import { SCIENCE_CURRICULUM_RECORDS } from './livingThings.js';
+import { CLIMATE_CURRICULUM_RECORDS } from './climate.js';
 
 /**
  * Central curriculum contract for the complete ten-build product.
@@ -414,6 +415,7 @@ const legacyScienceRecords = [
 ];
 
 const scienceRecords = SCIENCE_CURRICULUM_RECORDS.map(curriculumRecord);
+const climateRecords = CLIMATE_CURRICULUM_RECORDS.map(curriculumRecord);
 
 const mathematicsRecords = NUMBER_CURRICULUM_RECORDS.map(curriculumRecord);
 
@@ -546,6 +548,7 @@ const artRecords = TIDES_OF_CHANGE_STAGES.map((stage) => curriculumRecord({
 export const CURRICULUM_RECORDS = Object.freeze([
   ...geographyRecords,
   ...scienceRecords,
+  ...climateRecords,
   ...mathematicsRecords,
   ...englishRecords,
   ...psheRecords,

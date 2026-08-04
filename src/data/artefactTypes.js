@@ -111,6 +111,23 @@ const scienceType = (record) => ({
   ...record,
 });
 
+const climateType = (record) => ({
+  destinationIds: ['climate-laboratory'],
+  active: true,
+  activationBuild: 4,
+  versioned: true,
+  printable: true,
+  supportedExplanationModes: ['voice', 'short-text', 'selection', 'graph-annotation', 'evidence-labels'],
+  requiredContent: ['climateState'],
+  optionalContent: [
+    'selectedLocationIds', 'sourceIds', 'sourceRecords', 'variableValues', 'units',
+    'dataStatus', 'dataComponents', 'dataYear', 'evidence', 'generatorSeed', 'keyActivityId',
+    'scaffold', 'linkedAtlasPlaceIds', 'linkedNumberToolIds',
+    'linkedLivingThingsHabitatIds',
+  ],
+  ...record,
+});
+
 const NUMBER_ARTEFACT_TYPES = [
   ['four-digit-model', 'Four-digit Model', 'place-value'],
   ['partition-card', 'Partition Card', 'place-value'],
@@ -153,6 +170,24 @@ const SCIENCE_ARTEFACT_TYPES = [
   ['survey-record', 'Survey Record', 'survey'],
   ['child-created-science-challenge', 'Child-created Science Challenge', 'challenge'],
 ].map(([id, label, category]) => scienceType({ id, label, category }));
+
+const CLIMATE_ARTEFACT_TYPES = [
+  ['weather-and-climate-comparison', 'Weather and Climate Comparison', 'patterns'],
+  ['climate-pattern-strip', 'Climate Pattern Strip', 'patterns'],
+  ['seasonal-wheel', 'Seasonal Wheel', 'patterns'],
+  ['climate-zone-observation', 'Climate-zone Observation', 'climate-map'],
+  ['latitude-explanation', 'Latitude Explanation', 'climate-map'],
+  ['place-climate-comparison', 'Place Climate Comparison', 'climate-map'],
+  ['temperature-experiment', 'Temperature Experiment', 'experiment'],
+  ['rainfall-experiment', 'Rainfall Experiment', 'experiment'],
+  ['seasonality-comparison', 'Seasonality Comparison', 'experiment'],
+  ['climate-to-biome-model', 'Climate-to-biome Model', 'biome'],
+  ['climate-habitat-connection', 'Climate and Habitat Connection', 'living-things'],
+  ['global-warming-explanation', 'Global-warming Explanation', 'change'],
+  ['place-impact-comparison', 'Place-impact Comparison', 'change'],
+  ['climate-response-reasoning', 'Climate-response Reasoning', 'response'],
+  ['child-created-climate-investigation', 'Child-created Climate Investigation', 'investigation'],
+].map(([id, label, category]) => climateType({ id, label, category }));
 
 export const ARTEFACT_TYPES = Object.freeze([
   atlasType({
@@ -235,6 +270,7 @@ export const ARTEFACT_TYPES = Object.freeze([
 
   ...NUMBER_ARTEFACT_TYPES,
   ...SCIENCE_ARTEFACT_TYPES,
+  ...CLIMATE_ARTEFACT_TYPES,
 
   // Build 10 contracts: registered now so photographs and physical work survive
   // the same My Work lifecycle, but deliberately not exposed in Build 1.

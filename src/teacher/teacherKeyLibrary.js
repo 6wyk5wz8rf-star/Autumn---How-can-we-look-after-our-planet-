@@ -167,7 +167,6 @@ export function filterTeacherKeyLibrary(entries = [], {
     (environment === 'all' || entry.environment.id === environment)
     && (subject === 'all' || entry.subject.id === subject)
     && (scale === 'all' || entry.scale === scale)
-    && (topic === 'all' || entry.subject.id === 'science')
     && (topic === 'all' || topicWords.every((word) => entry.searchText.split(' ').includes(word)))
     && (!favouritesOnly || favourites.has(entry.id))
     && words.every((word) => entry.searchText.includes(word))

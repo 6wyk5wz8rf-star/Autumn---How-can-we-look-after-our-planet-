@@ -10,6 +10,11 @@ import {
   SCIENCE_COLLECTIONS,
   SCIENCE_DESTINATION_KEY,
 } from './livingThings.js';
+import {
+  CLIMATE_ACTIVITIES,
+  CLIMATE_COLLECTIONS,
+  CLIMATE_DESTINATION_KEY,
+} from './climate.js';
 import { parseRoute } from '../utils/router.js';
 
 /**
@@ -57,11 +62,11 @@ const activityKey = ({
   savedOutcomeType: outcome,
   active: true,
   printGuide: {
-    group: destinationId === 'number-expedition'
-      ? 'Number Expedition activities'
-      : destinationId === 'living-things-observatory'
-        ? 'Living Things Observatory activities'
-        : 'Planet Atlas activities',
+    group: ({
+      'number-expedition': 'Number Expedition activities',
+      'living-things-observatory': 'Living Things Observatory activities',
+      'climate-laboratory': 'Climate Laboratory activities',
+    })[destinationId] || 'Planet Atlas activities',
     quickUse,
     purpose: description,
     usefulMoments: ['encounter', 'during-teaching', 'after-teaching', 'revisit'],
@@ -468,6 +473,85 @@ const SCIENCE_DESTINATION_MANIFEST_KEY = {
   },
 };
 
+const CLIMATE_ACTIVITY_KEYS = CLIMATE_ACTIVITIES.map((activity) => activityKey({
+  code: activity.keyCode,
+  id: `key-climate-${activity.id}`,
+  activityId: activity.id,
+  title: activity.title,
+  description: activity.curriculumObjective,
+  curriculumTags: activity.curriculumTags,
+  curriculumStrand: activity.curriculumStrand,
+  outcome: activity.outcome.artefactTypeId,
+  quickUse: [1, 4, 6, 7, 10, 12, 14].includes(activity.order),
+  destinationId: 'climate-laboratory',
+  boardViewSuitable: activity.boardViewSuitable,
+  approximateMinutes: activity.approximateMinutes,
+})).map((key, index) => Object.freeze({
+  ...key,
+  teacherQuickUse: [1, 4, 6, 7, 10, 12, 14].includes(index + 1),
+  scale: 'Activity',
+}));
+
+const CLIMATE_COLLECTION_KEYS = CLIMATE_COLLECTIONS.map((collection) => ({
+  code: collection.code,
+  id: `key-${collection.id}`,
+  type: KEY_TYPES.COLLECTION,
+  scale: 'Collection',
+  destinationId: 'climate-laboratory',
+  destination: 'climate-laboratory',
+  activityIds: collection.activityIds,
+  permissionsGranted: collection.activityIds.map((id) => `activity:${id}`),
+  grants: [activityGrant(collection.activityIds, false, 'climate-laboratory')],
+  route: '#/keys',
+  title: collection.title,
+  childFacingTitle: collection.title,
+  description: collection.description,
+  curriculumTags: ['geography', 'science', 'mathematics', 'year-4', 'climate', collection.id],
+  curriculumStrand: collection.title,
+  savedOutcomeType: null,
+  active: true,
+  printGuide: {
+    group: 'Climate Laboratory collections',
+    quickUse: true,
+    purpose: collection.description,
+    usefulMoments: ['first encounter', 'during teaching', 'after teaching', 'revisit'],
+    expectedOutcome: `${collection.activityIds.length} revisable climate pathways`,
+    displayCard: true,
+    boardViewSuitable: true,
+    approximateMinutes: collection.activityIds.length * 18,
+  },
+}));
+
+const CLIMATE_DESTINATION_MANIFEST_KEY = {
+  code: CLIMATE_DESTINATION_KEY.code,
+  id: CLIMATE_DESTINATION_KEY.id,
+  type: KEY_TYPES.DESTINATION,
+  scale: 'Environment',
+  destinationId: 'climate-laboratory',
+  destination: 'climate-laboratory',
+  activityIds: [],
+  permissionsGranted: ['destination:climate-laboratory:*'],
+  grants: [activityGrant(['*'], true, 'climate-laboratory')],
+  route: '#/climate',
+  title: CLIMATE_DESTINATION_KEY.title,
+  childFacingTitle: CLIMATE_DESTINATION_KEY.title,
+  description: CLIMATE_DESTINATION_KEY.description,
+  curriculumTags: ['climate-laboratory', 'geography', 'science', 'mathematics', 'year-4', 'climate'],
+  curriculumStrand: 'Weather, climate, biomes and change',
+  savedOutcomeType: null,
+  active: true,
+  printGuide: {
+    group: 'Climate Laboratory collections',
+    quickUse: false,
+    purpose: CLIMATE_DESTINATION_KEY.description,
+    usefulMoments: ['revisit'],
+    expectedOutcome: 'All Climate Laboratory pathways in My Keys',
+    displayCard: true,
+    boardViewSuitable: true,
+    approximateMinutes: null,
+  },
+};
+
 export const TEACHER_KEY_CODE = '8584';
 
 const TEACHER_KEY = {
@@ -524,6 +608,9 @@ export const KEY_MANIFEST = Object.freeze([
   ...SCIENCE_ACTIVITY_KEYS,
   ...SCIENCE_COLLECTION_KEYS,
   SCIENCE_DESTINATION_MANIFEST_KEY,
+  ...CLIMATE_ACTIVITY_KEYS,
+  ...CLIMATE_COLLECTION_KEYS,
+  CLIMATE_DESTINATION_MANIFEST_KEY,
   TEACHER_KEY,
 ]);
 
@@ -676,6 +763,7 @@ export function validateKeyManifest(
         'planet-atlas': 'atlas',
         'number-expedition': 'numbers',
         'living-things-observatory': 'living-things',
+        'climate-laboratory': 'climate',
       })[key.destinationId];
       const expectedRoute = ({
         [KEY_TYPES.ACTIVITY]: 'activity',

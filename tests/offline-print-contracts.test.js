@@ -14,6 +14,7 @@ test('the install manifest stays GitHub Pages subpath-safe and supports either i
   assert.ok(manifest.icons.some(({ sizes }) => sizes === '512x512'));
   assert.ok(manifest.shortcuts.every(({ url }) => url.startsWith('./#/')));
   assert.ok(manifest.shortcuts.some(({ url }) => url === './#/living-things'));
+  assert.ok(manifest.shortcuts.some(({ url }) => url === './#/climate'));
 });
 
 test('the service worker keeps a good shell and receives an automatic build identifier', async () => {
@@ -43,4 +44,16 @@ test('Living Things print rules preserve organism diagrams, branches and monochr
   assert.match(scienceCss, /border-color:#000/);
   assert.match(scienceCss, /\.organism-illustration svg\{max-height:70mm\}/);
   assert.match(scienceCss, /\.survey-table/);
+});
+
+test('Climate print rules preserve units, patterned graphs and unclipped monochrome work', async () => {
+  const climateCss = await read('../src/destinations/climate-laboratory/climate-laboratory.css');
+  const climateUi = await read('../src/destinations/climate-laboratory/ClimateLaboratory.js');
+  assert.match(climateCss, /@media print/);
+  assert.match(climateCss, /break-inside:\s*avoid/);
+  assert.match(climateCss, /filter:\s*grayscale\(1\)/);
+  assert.doesNotMatch(climateCss, /print-hatch/);
+  assert.match(climateUi, /<pattern id=/);
+  assert.match(climateUi, /mm yearly rainfall/);
+  assert.match(climateUi, /sourceRecords/);
 });

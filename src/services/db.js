@@ -8,7 +8,7 @@
  */
 
 export const DATABASE_NAME = "our-planet";
-export const DATABASE_VERSION = 3;
+export const DATABASE_VERSION = 4;
 
 export const STORES = Object.freeze({
   PROFILES: "profiles",
@@ -231,6 +231,10 @@ function migrate(database, transaction, oldVersion) {
     ].forEach((storeName) => ensureStore(database, storeName, transaction));
   }
   if (oldVersion < 2) ensureStore(database, STORES.ACTIVITY_STATE, transaction);
+
+  // Version 4 keeps the Build 3 stores intact. Flow preferences, recent
+  // destination state and climate provenance use additive metadata and the
+  // existing versioned artefact/activity stores, so no record is rewritten.
 
   // Version 3 formalises all query indexes. Creating a missing index is safe for
   // databases produced by early development builds as well as fresh installs.
