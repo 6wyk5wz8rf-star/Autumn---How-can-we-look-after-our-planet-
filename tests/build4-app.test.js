@@ -37,6 +37,14 @@ function installDom(url = 'https://our-planet.test/#/home') {
 
 const settle = (milliseconds = 60) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
+async function waitFor(check, message, timeout = 5_000) {
+  const deadline = Date.now() + timeout;
+  while (!check()) {
+    if (Date.now() >= deadline) throw new Error(message);
+    await settle(40);
+  }
+}
+
 test('Climate cross-links reuse mathematics, return exactly, and guided work versions safely', async (context) => {
   const dom = installDom();
   const server = await createServer({ root: process.cwd(), server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'silent' });
@@ -52,7 +60,7 @@ test('Climate cross-links reuse mathematics, return exactly, and guided work ver
   await app.submitProfile(form);
 
   navigate('climate-tool', 'temperature-rainfall-lab');
-  await settle(500);
+  await waitFor(() => app.route.name === 'climate-tool' && app.climateLaboratory, 'Climate Laboratory did not finish loading.');
   assert.equal(app.route.name, 'climate-tool');
   app.climateLaboratory.update((state) => { state.temperatureC = -6; state.rainfallMm = 1_240; }, 'prepared-cross-destination-values');
   const numberLineLink = document.querySelector('[data-route="number-tool"][data-route-value="negative-number-line"]');
@@ -114,5 +122,13 @@ test('Climate cross-links reuse mathematics, return exactly, and guided work ver
   assert.equal(app.route.name, 'collection');
   assert.match(document.body.textContent, /Weather and Climate/);
   assert.equal(document.querySelectorAll('.collection-pathways [data-route="activity"]').length, 3);
+
+  document.querySelector('.primary-nav [data-route="key"]').click();
+  await settle(200);
+  await app.handleKey('7046', { setMessage() {}, reset() {} });
+  await settle(600);
+  assert.equal(app.route.name, 'keys');
+  assert.match(document.body.textContent, /My Key Activities/);
+  assert.match(document.body.textContent, /Every Guided Pathway was added to My Keys/);
   dom.window.close();
 });

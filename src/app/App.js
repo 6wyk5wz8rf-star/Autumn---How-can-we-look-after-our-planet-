@@ -988,7 +988,8 @@ export class App {
         const returnLocation = this.keyEntryOrigin;
         this.keyEntryOrigin = null;
         this.pendingToast = `${key.childFacingTitle || key.title} was added to My Keys.`;
-        if (returnLocation && !['key', 'maintenance'].includes(returnLocation.name)) this.restoreRouteLocation(returnLocation);
+        if (key.type === 'world') navigate('keys');
+        else if (returnLocation && !['key', 'maintenance'].includes(returnLocation.name)) this.restoreRouteLocation(returnLocation);
         else navigate('keys');
       }
       else {

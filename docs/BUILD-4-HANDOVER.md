@@ -96,13 +96,13 @@ The release candidate passed these checks from one source tree:
 
 - `npm test`: **134/134** tests passed
 - deterministic validation: **2,000** climate tasks and **2,000** classification trees
-- Vite production build: **209** modules transformed; Climate Laboratory emitted as a lazy **41.48 kB** chunk (**13.53 kB gzip**)
-- service worker: **14** production assets injected into cache `fe68e1ebd38f`
-- built-output smoke test: `index.html`, `service-worker.js` and every precached URL returned HTTP **200** (**15** unique URLs)
+- Vite production build: **209** modules transformed; Climate Laboratory emitted as a lazy **41.48 kB** chunk (**13.52 kB gzip**)
+- service worker: **14** production assets injected into cache `a782ddcef616`
+- built-output smoke test: the root, `service-worker.js` and every precached URL returned HTTP **200** (**16** URLs)
 - `npm audit --omit=dev`: **0 vulnerabilities**
 - application journey: Climate → shared negative-number-line tool → exact Climate state return
 - work journey: activity `4591` saved, reopened and revised with evidence and version history intact
-- key scales: collection `2469` and destination `1457` routed and granted the expected Climate pathways
+- key scales: activity `4591`, collection `2469`, destination `1457` and whole-world `7046` routed and granted the expected pathways; `7046` returns directly to My Keys
 - legacy continuity: all **72** Build 1–3 key ID/code pairs matched the locked SHA-256 fixture
 
 GitHub Pages deployment and the final live-origin journeys are verified against the published revision after the normal `main` push. They are not inferred from the local build.
